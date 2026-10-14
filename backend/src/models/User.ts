@@ -69,8 +69,6 @@ const userSchema = new Schema<IUser>(
 );
 
 // Indexes
-userSchema.index({ username: 1 });
-userSchema.index({ email: 1 });
 userSchema.index({ points: -1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ username: 'text', displayName: 'text', bio: 'text' });
@@ -99,14 +97,18 @@ userSchema.pre('save', function (next) {
 });
 
 // Never leak password field
+// Never expose credentials or security tokens in JSON responses
 userSchema.set('toJSON', {
   transform: (_doc, ret) => {
-    delete ret.password;
-    delete ret.emailVerifyToken;
-    delete ret.passwordResetToken;
-    delete ret.passwordResetExpires;
-    delete ret.refreshToken;
-    return ret;
+    const safe = { ...ret } as Record<string, unknown>;
+
+    delete safe.password;
+    delete safe.emailVerifyToken;
+    delete safe.passwordResetToken;
+    delete safe.passwordResetExpires;
+    delete safe.refreshToken;
+
+    return safe;
   },
 });
 

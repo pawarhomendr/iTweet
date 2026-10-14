@@ -65,8 +65,21 @@ router.patch('/me', authenticate, upload.fields([{ name: 'avatar', maxCount: 1 }
     if (req.body.displayName !== undefined) update.displayName = xss(req.body.displayName);
     if (req.body.bio !== undefined) update.bio = xss(req.body.bio);
     if (req.body.website !== undefined) update.website = req.body.website;
-    if (files?.avatar?.[0]) update.avatar = await uploadToCloudinary(files.avatar[0].buffer, 'avatars');
-    if (files?.cover?.[0]) update.coverImage = await uploadToCloudinary(files.cover[0].buffer, 'covers');
+    if (files?.avatar?.[0]) {
+  const uploadedAvatar = await uploadToCloudinary(
+    files.avatar[0].buffer,
+    'avatars'
+  );
+  update.avatar = uploadedAvatar.url;
+}
+
+if (files?.cover?.[0]) {
+  const uploadedCover = await uploadToCloudinary(
+    files.cover[0].buffer,
+    'covers'
+  );
+  update.coverImage = uploadedCover.url;
+}
 
     const user = await User.findByIdAndUpdate(req.user!._id, update, { new: true });
     res.json({ success: true, data: { user } });

@@ -103,11 +103,16 @@ router.post('/', authenticate, upload.fields([{ name: 'cover', maxCount: 1 }, { 
     const images: string[] = [];
 
     if (files?.cover?.[0]) {
-      coverImage = await uploadToCloudinary(files.cover[0].buffer, 'covers');
+     const uploadedCover = await uploadToCloudinary(
+  files.cover[0].buffer,
+  'covers'
+);
+coverImage = uploadedCover.url;
     }
     if (files?.images) {
       for (const f of files.images) {
-        images.push(await uploadToCloudinary(f.buffer, 'posts'));
+        const uploadedImage = await uploadToCloudinary(f.buffer, 'posts');
+images.push(uploadedImage.url);
       }
     }
 
@@ -149,7 +154,11 @@ router.patch('/:id', authenticate, upload.fields([{ name: 'cover', maxCount: 1 }
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
     if (files?.cover?.[0]) {
-      post.coverImage = await uploadToCloudinary(files.cover[0].buffer, 'covers');
+      const uploadedCover = await uploadToCloudinary(
+  files.cover[0].buffer,
+  'covers'
+);
+post.coverImage = uploadedCover.url;
     }
 
     const allowed = ['title', 'body', 'excerpt', 'category', 'tags', 'sourceUrl'];
