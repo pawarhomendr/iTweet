@@ -90,7 +90,6 @@ postSchema.index({ status: 1, publishedAt: -1 });
 postSchema.index({ category: 1, status: 1 });
 postSchema.index({ tags: 1 });
 postSchema.index({ title: 'text', excerpt: 'text', body: 'text' });
-postSchema.index({ slug: 1 });
 postSchema.index({ likesCount: -1, publishedAt: -1 }); // trending
 
 export const Post = mongoose.model<IPost>('Post', postSchema);

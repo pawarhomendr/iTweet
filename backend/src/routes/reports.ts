@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { body } from 'express-validator';
+import { body, param } from 'express-validator';
 import { Report } from '../models/Report';
 import { authenticate, requireMod, AuthRequest } from '../middleware/auth';
 import { validate } from '../middleware/validate';
@@ -46,6 +46,7 @@ router.get('/', authenticate, requireMod, async (req: any, res: any, next: any) 
 
 // PATCH /api/reports/:id
 router.patch('/:id', authenticate, requireMod, [
+  param('id').isMongoId().withMessage('Invalid report ID'),
   body('status').isIn(['resolved', 'dismissed']),
   body('reviewNote').optional().trim().isLength({ max: 500 }),
 ], validate, async (req: AuthRequest, res: any, next: any) => {

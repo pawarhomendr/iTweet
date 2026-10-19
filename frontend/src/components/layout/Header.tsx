@@ -1,16 +1,14 @@
 import React from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
 import { useThemeStore } from '@/store/theme';
 import { useSocketStore } from '@/store/socket';
 import { SunIcon, MoonIcon, BellIcon, PenIcon, MessageIcon } from '@/components/ui/Icons';
 
 export const Header: React.FC = () => {
-  const { user, isAuthenticated, isMod, logout } = useAuthStore();
+  const { user, isAuthenticated, isMod } = useAuthStore();
   const { toggle } = useThemeStore();
   const { unreadCount } = useSocketStore();
-  const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = React.useState(false);
 
   return (
     <header className="site-head">
@@ -87,3 +85,5 @@ export const Header: React.FC = () => {
     </header>
   );
 };
+
+

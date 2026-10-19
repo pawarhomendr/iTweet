@@ -39,8 +39,18 @@ export const EditorPage: React.FC = () => {
       navigate('/');
     },
     onError: (err: any) => {
+      const errors = err.response?.data?.errors;
+
+      if (Array.isArray(errors) && errors.length > 0) {
+        errors.forEach((error: { field?: string; message?: string }) => {
+          toast.error(`${error.field || 'Post'}: ${error.message || 'Invalid value'}`);
+        });
+        return;
+      }
+
       toast.error(err.response?.data?.message || 'Failed to submit post');
     },
+
   });
 
   return (

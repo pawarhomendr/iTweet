@@ -19,14 +19,6 @@ export default defineConfig({
     // FIX S-4: never expose sourcemaps publicly in production.
     // Set VITE_SOURCEMAP=true locally to enable them for debugging.
     sourcemap: process.env.VITE_SOURCEMAP === 'true' ? true : false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          react: ['react', 'react-dom'],
-          router: ['react-router-dom'],
-          query: ['@tanstack/react-query'],
-        },
-      },
-    },
+   
   },
 });

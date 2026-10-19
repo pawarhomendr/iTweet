@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+// @vitest-environment jsdom
+import { describe, it, expect } from 'vitest';
 
 // ─── Auth store: token must NOT be persisted to localStorage ─────────────────
 describe('Auth store — token in-memory only', () => {
@@ -31,3 +32,4 @@ describe('Auth store — token in-memory only', () => {
     expect(useAuthStore.getState().isAuthenticated()).toBe(false);
   });
 });
+

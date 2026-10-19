@@ -39,7 +39,11 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null });
       },
       isAuthenticated: () => !!_memoryToken && !!get().user,
-      isMod: () => ['moderator', 'admin'].includes(get().user?.role ?? ''),
+    isMod: () => {
+  const role = get().user?.role;
+  return typeof role === 'string' &&
+    role.split(',').map((r) => r.trim()).some((r) => ['moderator', 'admin'].includes(r));
+},
       isAdmin: () => get().user?.role === 'admin',
     }),
     {

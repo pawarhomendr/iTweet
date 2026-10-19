@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ path: '../.env' });
+import dns from 'node:dns';
+dns.setServers(['8.8.8.8']);
 
 // ─── FIX S-3: Validate required env vars at startup before anything else ───
 const REQUIRED_ENV = [

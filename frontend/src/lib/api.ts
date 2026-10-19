@@ -1,46 +1,72 @@
+
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/store/auth';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '/api',
-  withCredentials: true, // send httpOnly refresh cookie
+  withCredentials: true,
   timeout: 15_000,
 });
 
-// Attach in-memory bearer token — FIX S-2: read from getToken(), not from persisted store
+// Attach the in-memory access token to API requests.
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = useAuthStore.getState().getToken();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
   return config;
 });
 
-// Auto-refresh on 401 using httpOnly refresh cookie
+// Share one refresh request between App.tsx and the response interceptor.
 let refreshing: Promise<string | null> | null = null;
 
+export function refreshAccessToken(): Promise<string | null> {
+  if (!refreshing) {
+    refreshing = api
+      .post<{ data: { token: string } }>('/auth/refresh')
+      .then((response) => {
+        const token = response.data.data.token;
+        useAuthStore.getState().setToken(token);
+        return token;
+      })
+      .catch(() => {
+        useAuthStore.getState().logout();
+        return null;
+      })
+      .finally(() => {
+        refreshing = null;
+      });
+  }
+
+  return refreshing;
+}
+
+// Retry eligible requests once after refreshing an expired access token.
 api.interceptors.response.use(
-  (r) => r,
+  (response) => response,
   async (error: AxiosError) => {
-    const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    if (error.response?.status === 401 && !original._retry && !original.url?.includes('/auth/')) {
+    const original = error.config as
+      | (InternalAxiosRequestConfig & { _retry?: boolean })
+      | undefined;
+
+    if (
+      error.response?.status === 401 &&
+      original &&
+      !original._retry &&
+      !original.url?.includes('/auth/')
+    ) {
       original._retry = true;
-      if (!refreshing) {
-        refreshing = api.post<{ data: { token: string } }>('/auth/refresh')
-          .then((r) => {
-            useAuthStore.getState().setToken(r.data.data.token);
-            return r.data.data.token;
-          })
-          .catch(() => {
-            useAuthStore.getState().logout();
-            return null;
-          })
-          .finally(() => { refreshing = null; });
-      }
-      const newToken = await refreshing;
+
+      const newToken = await refreshAccessToken();
+
       if (newToken) {
         original.headers.Authorization = `Bearer ${newToken}`;
         return api(original);
       }
     }
+
     return Promise.reject(error);
   }
 );

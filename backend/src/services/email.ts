@@ -11,12 +11,21 @@ function createTransport() {
   });
 }
 
+
 export async function sendEmail(opts: {
   to: string;
   subject: string;
   html: string;
 }): Promise<void> {
-  if (process.env.NODE_ENV === 'test') return; // skip in tests
+  if (process.env.NODE_ENV === 'test') return;
+
+  if (process.env.NODE_ENV === 'development') {
+    console.info(
+      `[email:development] Email skipped: ${opts.subject} -> ${opts.to}`,
+    );
+    return;
+  }
+
   const transport = createTransport();
   await transport.sendMail({
     from: process.env.EMAIL_FROM ?? 'Off By One <noreply@example.com>',
@@ -25,6 +34,7 @@ export async function sendEmail(opts: {
     html: opts.html,
   });
 }
+
 
 export function passwordResetEmail(link: string): string {
   return `

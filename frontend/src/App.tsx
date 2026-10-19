@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
@@ -15,36 +16,62 @@ import { FeedbackPage } from '@/pages/FeedbackPage';
 import { AdminPage } from '@/pages/AdminPage';
 import { useAuthStore } from '@/store/auth';
 import { useSocketStore } from '@/store/socket';
+import { refreshAccessToken } from '@/lib/api';
 
 export const App: React.FC = () => {
-  const { isAuthenticated, isMod, setToken, setUser, logout, user } = useAuthStore();
+  const { isAuthenticated, isMod, user } = useAuthStore();
   const { connect, disconnect } = useSocketStore();
-
-  // FIX S-2: On page load, silently refresh the in-memory access token using
-  // the httpOnly refresh cookie. Token is never stored in localStorage.
-  useEffect(() => {
-    if (user && !isAuthenticated()) {
-      // We have a persisted user profile but no in-memory token — attempt silent refresh
-      import('@/lib/api').then(({ api }) => {
-        api.post('/auth/refresh')
-          .then((r) => {
-            setToken(r.data.data.token);
-          })
-          .catch(() => {
-            // Refresh cookie expired or invalid — clear stale user profile
-            logout();
-          });
-      });
-    }
-  }, []); // run once on mount
+  const [sessionReady, setSessionReady] = useState(false);
 
   useEffect(() => {
+    let active = true;
+
+    const restoreSession = async () => {
+      const auth = useAuthStore.getState();
+
+      if (auth.getToken()) {
+        if (active) setSessionReady(true);
+        return;
+      }
+
+      if (!auth.user) {
+        if (active) setSessionReady(true);
+        return;
+      }
+
+      await refreshAccessToken();
+
+      if (active) setSessionReady(true);
+    };
+
+    void restoreSession();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!sessionReady) return;
+
     if (isAuthenticated()) {
       connect();
     } else {
       disconnect();
     }
-  }, [isAuthenticated()]);
+
+    return () => {
+      disconnect();
+    };
+  }, [sessionReady, user, connect, disconnect, isAuthenticated]);
+
+  if (!sessionReady) {
+    return (
+      <div className="page" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>
+        <p>Restoring session...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="page" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -60,7 +87,6 @@ export const App: React.FC = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
-          {/* Protected Routes */}
           <Route
             path="/write"
             element={isAuthenticated() ? <EditorPage /> : <Navigate to="/login" replace />}
@@ -73,11 +99,9 @@ export const App: React.FC = () => {
             path="/verification/apply"
             element={isAuthenticated() ? <VerificationApplyPage /> : <Navigate to="/login" replace />}
           />
-
-          {/* Moderator / Admin Routes */}
           <Route
             path="/admin"
-            element={isMod() ? <AdminPage /> : <Navigate to="/" replace />}
+            element={isAuthenticated() && isMod() ? <AdminPage /> : <Navigate to="/" replace />}
           />
 
           <Route path="*" element={<Navigate to="/" replace />} />

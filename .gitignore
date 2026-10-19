@@ -57,3 +57,5 @@ frontend/.env.*
 # Debug and coverage
 coverage/
 .nyc_output/
+# Local VS Code session data
+.vscode/sessions.json

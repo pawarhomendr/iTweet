@@ -12,8 +12,25 @@ export async function connectDB(): Promise<void> {
       socketTimeoutMS: 45000,
     });
     console.log('[db] connected to MongoDB');
-  } catch (err) {
-    console.error('[db] connection failed:', err);
+    } catch (err) {
+    console.error(
+      '[db] connection failed:',
+      err instanceof Error ? err.message : err
+    );
+
+    if (err instanceof mongoose.Error.MongooseServerSelectionError) {
+      console.error(
+        '[db] member details:',
+        [...(err as mongoose.Error.MongooseServerSelectionError & {
+          reason: { servers: Map<string, { type: string; error?: Error }> };
+        }).reason.servers.entries()].map(([address, server]) => ({
+          address,
+          state: server.type,
+          error: server.error?.message ?? 'No specific error reported',
+        }))
+      );
+    }
+
     process.exit(1);
   }
 

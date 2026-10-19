@@ -16,7 +16,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
   unreadCount: 0,
   connect: () => {
     if (get().socket?.connected) return;
-    const token = useAuthStore.getState().token;
+    const token = useAuthStore.getState().getToken();
     if (!token) return;
     const socket = io('/', { auth: { token }, transports: ['websocket', 'polling'] });
     socket.on('notification:new', () => set((s) => ({ unreadCount: s.unreadCount + 1 })));
@@ -29,3 +29,4 @@ export const useSocketStore = create<SocketState>((set, get) => ({
   incrementUnread: () => set((s) => ({ unreadCount: s.unreadCount + 1 })),
   resetUnread: () => set({ unreadCount: 0 }),
 }));
+

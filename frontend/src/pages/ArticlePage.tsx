@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { Post, Comment } from '@/types';
@@ -9,9 +9,8 @@ import toast from 'react-hot-toast';
 
 export const ArticlePage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { user, isAuthenticated } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [commentText, setCommentText] = useState('');
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('spam');
@@ -285,3 +284,4 @@ export const ArticlePage: React.FC = () => {
     </article>
   );
 };
+

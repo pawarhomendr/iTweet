@@ -70,6 +70,18 @@ export const AdminPage: React.FC = () => {
     },
   });
 
+  // Resolve or dismiss a user report
+  const reviewReportMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'resolved' | 'dismissed' }) => {
+      return api.patch(`/reports/${id}`, { status });
+    },
+    onSuccess: () => {
+      toast.success('Report reviewed successfully');
+      queryClient.invalidateQueries({ queryKey: ['admin-reports'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+    },
+  });
+
   return (
     <div className="shell page-content">
       <p className="eyebrow">// moderation &amp; administration</p>
@@ -126,6 +138,47 @@ export const AdminPage: React.FC = () => {
                   </div>
                 </div>
                 <p style={{ marginTop: '12px', fontFamily: 'var(--prose)', fontSize: '15px' }}>{p.excerpt || p.body.slice(0, 200)}...</p>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Open reports */}
+      {tab === 'reports' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {(reports ?? []).length === 0 ? (
+            <p className="dim mono">No open reports.</p>
+          ) : (
+            reports?.map((report) => (
+              <div key={report._id} className="card" style={{ padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                  <div>
+                    <span className="badge">{report.targetType}</span>
+                    <h3 style={{ marginTop: '8px' }}>{report.reason.replace(/_/g, ' ')}</h3>
+                    <p className="dim mono" style={{ fontSize: '12px' }}>
+                      Reported by @{report.reporter?.username ?? 'unknown'} · {new Date(report.createdAt).toLocaleDateString()}
+                    </p>
+                    <p style={{ marginTop: '8px' }}>{report.details || 'No additional details provided.'}</p>
+                    <p className="dim mono" style={{ marginTop: '8px', fontSize: '12px' }}>Target ID: {report.target}</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                    <button
+                      className="btn btn-sm btn-accent"
+                      disabled={reviewReportMutation.isPending}
+                      onClick={() => reviewReportMutation.mutate({ id: report._id, status: 'resolved' })}
+                    >
+                      Resolve
+                    </button>
+                    <button
+                      className="btn btn-sm btn-ghost"
+                      disabled={reviewReportMutation.isPending}
+                      onClick={() => reviewReportMutation.mutate({ id: report._id, status: 'dismissed' })}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
               </div>
             ))
           )}
@@ -196,3 +249,5 @@ export const AdminPage: React.FC = () => {
     </div>
   );
 };
+
+

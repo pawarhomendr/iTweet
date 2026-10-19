@@ -37,6 +37,14 @@ export const VerificationApplyPage: React.FC = () => {
 
   const eligible = postsCount >= 5 && followersCount >= 20 && points >= 200;
 
+  if (isLoading) {
+  return (
+    <div className="shell page-content" style={{ maxWidth: '680px' }}>
+      <p className="dim mono">Loading verification status...</p>
+    </div>
+  );
+}
+
   return (
     <div className="shell page-content" style={{ maxWidth: '680px' }}>
       <p className="eyebrow">// verified creator program</p>
@@ -127,3 +135,4 @@ export const VerificationApplyPage: React.FC = () => {
     </div>
   );
 };
+
