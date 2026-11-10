@@ -48,8 +48,8 @@ export const PostCard: React.FC<PostCardProps> = ({ post, isLatest }) => {
 
           <div style={{ marginTop: '13px', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: 'var(--mono)', fontSize: '11.5px', color: 'var(--muted)', flexWrap: 'wrap' }}>
             <span style={{ color: 'var(--ink)', fontWeight: 500 }}>
-              {post.author.displayName || post.author.username}
-              {post.author.isVerified && <CheckBadgeIcon />}
+              {post.author?.displayName || post.author?.username || 'Anonymous'}
+              {post.author?.isVerified && <CheckBadgeIcon />}
             </span>
             <span aria-hidden="true">·</span>
             <span style={{ color: 'var(--accent)' }}>
