@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { body, param } from 'express-validator';
 import { Report } from '../models/Report';
-import { authenticate, requireMod, AuthRequest } from '../middleware/auth';
+import { authenticate, requireEmailVerified, requireMod, AuthRequest } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
 const router = Router();
 
 // POST /api/reports
-router.post('/', authenticate, [
+router.post('/', authenticate, requireEmailVerified, [
   body('targetType').isIn(['post', 'comment', 'user']),
   body('target').isMongoId(),
   body('reason').isIn(['spam', 'harassment', 'misinformation', 'adult_content', 'hate_speech', 'other']),

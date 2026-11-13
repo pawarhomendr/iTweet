@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/auth';
 import { useThemeStore } from '@/store/theme';
 import { useSocketStore } from '@/store/socket';
 import { SunIcon, MoonIcon, BellIcon, PenIcon, MessageIcon } from '@/components/ui/Icons';
+import { LanguageSelector } from '@/components/common/LanguageSelector';
 
 export const Header: React.FC = () => {
   const { user, isAuthenticated, isMod } = useAuthStore();
@@ -14,7 +15,7 @@ export const Header: React.FC = () => {
     <header className="site-head">
       <div className="shell head-inner">
         <Link to="/" className="mark">
-          Tech Horizon<span className="caret" aria-hidden="true" />
+          Indi<span style={{ color: 'var(--accent)' }}>agram</span><span className="caret" aria-hidden="true" />
         </Link>
 
         {/* Desktop Nav */}
@@ -24,6 +25,9 @@ export const Header: React.FC = () => {
           </NavLink>
           <NavLink to="/trending" style={({ isActive }) => ({ color: isActive ? 'var(--accent)' : 'var(--ink-2)', fontSize: '14.5px' })}>
             Trending
+          </NavLink>
+          <NavLink to="/search" style={({ isActive }) => ({ color: isActive ? 'var(--accent)' : 'var(--ink-2)', fontSize: '14.5px' })}>
+            Explore
           </NavLink>
           <NavLink to="/leaderboard" style={({ isActive }) => ({ color: isActive ? 'var(--accent)' : 'var(--ink-2)', fontSize: '14.5px' })}>
             Leaderboard
@@ -39,7 +43,9 @@ export const Header: React.FC = () => {
         </nav>
 
         {/* Right Tools */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '20px' }}>
+          <LanguageSelector />
+
           {isAuthenticated() ? (
             <>
               <Link to="/write" className="btn btn-sm btn-accent" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -85,5 +91,3 @@ export const Header: React.FC = () => {
     </header>
   );
 };
-
-

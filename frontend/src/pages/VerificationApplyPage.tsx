@@ -4,6 +4,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/auth';
 import type { VerificationRequest } from '@/types';
 import toast from 'react-hot-toast';
+import { PageBackButton } from '@/components/layout/PageBackButton';
 
 export const VerificationApplyPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -38,57 +39,201 @@ export const VerificationApplyPage: React.FC = () => {
   const eligible = postsCount >= 5 && followersCount >= 20 && points >= 200;
 
   if (isLoading) {
-  return (
-    <div className="shell page-content" style={{ maxWidth: '680px' }}>
-      <p className="dim mono">Loading verification status...</p>
-    </div>
-  );
-}
+    return (
+      <div className="shell page-content" style={{ maxWidth: '680px' }}>
+        <div className="skeleton" style={{ height: '32px', width: '40%', marginBottom: '16px' }} />
+        <div className="skeleton" style={{ height: '160px', width: '100%' }} />
+      </div>
+    );
+  }
 
   return (
     <div className="shell page-content" style={{ maxWidth: '680px' }}>
-      <p className="eyebrow">// verified creator program</p>
-      <h1 style={{ fontSize: '32px', marginBottom: '12px' }}>Apply for Verified Badge</h1>
-      <p className="dim" style={{ marginBottom: '28px' }}>
-        The Off By One blue tick is reserved for verified contributors who regularly produce high-signal,
-        original engineering articles. Volume of posts alone never guarantees verification.
-      </p>
+      <PageBackButton fallback="/" />
+      <div style={{ marginBottom: '28px' }}>
+        <p className="eyebrow">{'// verified contributor program'}</p>
+        <h1
+          style={{
+            fontFamily: 'var(--heading)',
+            fontSize: '32px',
+            fontWeight: 600,
+            letterSpacing: '-.02em',
+            color: 'var(--ink)',
+            marginTop: '4px',
+            marginBottom: '8px',
+          }}
+        >
+          Apply for Verified Badge
+        </h1>
+        <p className="dim" style={{ fontFamily: 'var(--prose)', fontSize: '15px' }}>
+          The Indiagram blue tick recognizes verified contributors who consistently produce high-signal,
+          original engineering articles. Volume of posts alone never guarantees verification.
+        </p>
+      </div>
 
       {/* Criteria Card */}
-      <div className="card" style={{ padding: '24px', marginBottom: '32px' }}>
-        <h3 style={{ fontSize: '18px', marginBottom: '16px' }}>Eligibility Checklist</h3>
-        <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '14.5px' }}>
-          <li style={{ color: postsCount >= 5 ? 'var(--c-str)' : 'var(--muted)' }}>
-            {postsCount >= 5 ? '✓' : '✗'} At least 5 approved published articles ({postsCount} / 5)
+      <div
+        className="card"
+        style={{
+          padding: '28px',
+          marginBottom: '32px',
+          border: '1px solid var(--rule)',
+          background: 'var(--surface-2)',
+        }}
+      >
+        <h3
+          style={{
+            fontFamily: 'var(--heading)',
+            fontSize: '17px',
+            fontWeight: 600,
+            marginBottom: '16px',
+            color: 'var(--ink)',
+          }}
+        >
+          Eligibility Requirements
+        </h3>
+        <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px' }}>
+          <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span
+              style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: '11px',
+                fontWeight: 700,
+                background: postsCount >= 5 ? 'var(--success)' : 'var(--rule)',
+                color: '#fff',
+                flexShrink: 0,
+              }}
+            >
+              {postsCount >= 5 ? '✓' : '–'}
+            </span>
+            <span style={{ color: postsCount >= 5 ? 'var(--ink)' : 'var(--muted)' }}>
+              At least 5 approved published articles{' '}
+              <strong style={{ fontFamily: 'var(--mono)' }}>({postsCount}/5)</strong>
+            </span>
           </li>
-          <li style={{ color: followersCount >= 20 ? 'var(--c-str)' : 'var(--muted)' }}>
-            {followersCount >= 20 ? '✓' : '✗'} At least 20 followers ({followersCount} / 20)
+
+          <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span
+              style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: '11px',
+                fontWeight: 700,
+                background: followersCount >= 20 ? 'var(--success)' : 'var(--rule)',
+                color: '#fff',
+                flexShrink: 0,
+              }}
+            >
+              {followersCount >= 20 ? '✓' : '–'}
+            </span>
+            <span style={{ color: followersCount >= 20 ? 'var(--ink)' : 'var(--muted)' }}>
+              At least 20 followers{' '}
+              <strong style={{ fontFamily: 'var(--mono)' }}>({followersCount}/20)</strong>
+            </span>
           </li>
-          <li style={{ color: points >= 200 ? 'var(--c-str)' : 'var(--muted)' }}>
-            {points >= 200 ? '✓' : '✗'} At least 200 contribution points ({points} / 200)
+
+          <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span
+              style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: '11px',
+                fontWeight: 700,
+                background: points >= 200 ? 'var(--success)' : 'var(--rule)',
+                color: '#fff',
+                flexShrink: 0,
+              }}
+            >
+              {points >= 200 ? '✓' : '–'}
+            </span>
+            <span style={{ color: points >= 200 ? 'var(--ink)' : 'var(--muted)' }}>
+              At least 200 contribution points{' '}
+              <strong style={{ fontFamily: 'var(--mono)' }}>({points}/200)</strong>
+            </span>
           </li>
-          <li style={{ color: 'var(--c-str)' }}>
-            ✓ Good standing with no active moderation suspensions
+
+          <li style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span
+              style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: '11px',
+                fontWeight: 700,
+                background: 'var(--success)',
+                color: '#fff',
+                flexShrink: 0,
+              }}
+            >
+              ✓
+            </span>
+            <span style={{ color: 'var(--ink)' }}>
+              Good community standing with no active moderation suspensions
+            </span>
           </li>
         </ul>
       </div>
 
       {myRequest ? (
-        <div className="card" style={{ padding: '24px' }}>
-          <h3>Application Status: <span className="badge">{myRequest.status}</span></h3>
-          <p className="dim mono" style={{ marginTop: '8px', fontSize: '12px' }}>
+        <div
+          className="card"
+          style={{
+            padding: '28px',
+            border: '1px solid var(--rule)',
+            background: 'var(--surface)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <h3 style={{ fontFamily: 'var(--heading)', fontSize: '18px' }}>Your Application</h3>
+            <span className={`badge ${myRequest.status === 'approved' ? 'badge-verified' : ''}`}>
+              {myRequest.status}
+            </span>
+          </div>
+          <p className="dim mono" style={{ fontSize: '12px' }}>
             Submitted on {new Date(myRequest.createdAt).toLocaleDateString()}
           </p>
           {myRequest.reviewNote && (
-            <p style={{ marginTop: '12px', color: 'var(--ink-2)' }}>
-              <strong>Moderator Note:</strong> {myRequest.reviewNote}
-            </p>
+            <div
+              style={{
+                marginTop: '16px',
+                padding: '14px',
+                background: 'var(--surface-2)',
+                borderRadius: 'var(--radius-sm)',
+                borderLeft: '3px solid var(--accent)',
+              }}
+            >
+              <p style={{ fontSize: '14px', color: 'var(--ink-2)' }}>
+                <strong>Moderator Note:</strong> {myRequest.reviewNote}
+              </p>
+            </div>
           )}
         </div>
       ) : !eligible ? (
-        <div className="card" style={{ padding: '24px' }}>
-          <p className="dim">
-            You do not currently meet the eligibility thresholds. Keep writing and engaging to qualify!
+        <div
+          className="card"
+          style={{
+            padding: '28px',
+            textAlign: 'center',
+            border: '1px solid var(--rule)',
+          }}
+        >
+          <h3 style={{ fontFamily: 'var(--heading)', fontSize: '20px', marginBottom: '8px' }}>
+            Not yet eligible
+          </h3>
+          <p className="dim" style={{ fontFamily: 'var(--prose)', fontSize: '15px' }}>
+            You do not currently meet all the thresholds above. Keep writing, sharing benchmarks, and engaging to qualify!
           </p>
         </div>
       ) : (
@@ -98,24 +243,48 @@ export const VerificationApplyPage: React.FC = () => {
             applyMutation.mutate();
           }}
           className="card"
-          style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}
+          style={{
+            padding: '32px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            border: '1px solid var(--rule)',
+          }}
         >
           <div className="field">
-            <label>Why should you be verified? (50-800 characters)</label>
+            <label htmlFor="verify-statement">
+              Why should you be verified?{' '}
+              <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: '12px' }}>
+                (50–800 characters)
+              </span>
+            </label>
             <textarea
+              id="verify-statement"
               rows={5}
-              placeholder="Tell our review team about your background, expertise, and what you publish here..."
+              placeholder="Tell our review team about your engineering background, what you publish here, and any public projects you maintain..."
               value={statement}
               onChange={(e) => setStatement(e.target.value)}
               required
               minLength={50}
               maxLength={800}
             />
+            <span
+              className="mono dim"
+              style={{ fontSize: '11px', textAlign: 'right' }}
+            >
+              {statement.length}/800
+            </span>
           </div>
 
           <div className="field">
-            <label>External links proving your identity / work (GitHub, personal site, Twitter — one per line)</label>
+            <label htmlFor="verify-links">
+              External links confirming your identity or work{' '}
+              <span style={{ color: 'var(--muted)', fontWeight: 400, fontSize: '12px' }}>
+                (GitHub, personal site, X — one per line)
+              </span>
+            </label>
             <textarea
+              id="verify-links"
               rows={3}
               placeholder="https://github.com/yourhandle&#10;https://yourblog.com"
               value={links}
@@ -127,6 +296,7 @@ export const VerificationApplyPage: React.FC = () => {
             type="submit"
             className="btn btn-accent"
             disabled={applyMutation.isPending || statement.length < 50}
+            style={{ marginTop: '4px' }}
           >
             {applyMutation.isPending ? 'Submitting...' : 'Submit Verification Request'}
           </button>
@@ -135,4 +305,3 @@ export const VerificationApplyPage: React.FC = () => {
     </div>
   );
 };
-

@@ -22,7 +22,7 @@ npm install              # Installs all workspaces
 
 ### 1.3 Configure Environment Variables
 
-Create `backend/.env`:
+Create the canonical local-development file at `backend/.env`:
 ```bash
 # Required
 NODE_ENV=development
@@ -46,6 +46,8 @@ SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_app_password
 EMAIL_FROM="Off By One <noreply@yourdomain.com>"
 ```
+
+For compatibility, the backend also checks a legacy repository-root `.env` first. If both files exist, root `.env` values retain precedence and `backend/.env` only fills unset values. Production deployments should provide these variables through the hosting platform rather than creating a repository file.
 
 ### 1.4 Run Local Development
 ```bash
@@ -117,7 +119,7 @@ curl http://localhost:4000/api/health
 4. Configure:
    - **Build Command**: `npm install && npm run build`
    - **Start Command**: `npm run start`
-   - **Environment Variables**: Add all variables from `.env`
+    - **Environment Variables**: Add the backend variables from `.env.example` directly in the deployment platform
    - **Plan**: Free
 
 5. After deploy, your API will be at: `https://your-service.onrender.com`
@@ -210,7 +212,7 @@ Before going live, verify:
 - [ ] MongoDB Atlas backup enabled
 - [ ] Cloudinary signed uploads enabled
 - [ ] Password reset emails working
-- [ ] All 3 environment files synced in deployment platform
+- [ ] All backend environment variables configured in the deployment platform; no repository `.env` file required
 - [ ] SSL certificate active (automatic on Vercel/Render)
 
 ---

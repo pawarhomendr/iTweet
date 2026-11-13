@@ -7,6 +7,14 @@ export default defineConfig({
   resolve: {
     alias: { '@': resolve(__dirname, 'src') },
   },
+  esbuild: {
+    target: 'esnext',
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      target: 'esnext',
+    },
+  },
   server: {
     port: 5173,
     proxy: {
@@ -15,10 +23,10 @@ export default defineConfig({
     },
   },
   build: {
+    target: 'esnext',
     outDir: 'dist',
     // FIX S-4: never expose sourcemaps publicly in production.
     // Set VITE_SOURCEMAP=true locally to enable them for debugging.
     sourcemap: process.env.VITE_SOURCEMAP === 'true' ? true : false,
-   
   },
 });

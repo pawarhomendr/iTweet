@@ -4,7 +4,7 @@ import { Comment } from '../models/Comment';
 import { Post } from '../models/Post';
 import { Like } from '../models/Like';
 import { Notification } from '../models/Notification';
-import { authenticate, optionalAuth, requireMod, AuthRequest } from '../middleware/auth';
+import { authenticate, optionalAuth, requireEmailVerified, AuthRequest } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { awardPoints } from '../services/rewards';
 import { emitNotification } from '../config/socket';
@@ -38,7 +38,7 @@ router.get('/:postId/comments/:commentId/replies', async (req: any, res: any, ne
 });
 
 // POST /api/posts/:postId/comments
-router.post('/:postId/comments', authenticate, [
+router.post('/:postId/comments', authenticate, requireEmailVerified, [
   body('text').trim().isLength({ min: 1, max: 1000 }),
   body('parent').optional().isMongoId(),
 ], validate, async (req: AuthRequest, res: any, next: any) => {
@@ -78,7 +78,7 @@ router.post('/:postId/comments', authenticate, [
 });
 
 // PATCH /api/posts/:postId/comments/:id
-router.patch('/:postId/comments/:id', authenticate, [
+router.patch('/:postId/comments/:id', authenticate, requireEmailVerified, [
   body('text').trim().isLength({ min: 1, max: 1000 }),
 ], validate, async (req: AuthRequest, res: any, next: any) => {
   try {
@@ -92,7 +92,7 @@ router.patch('/:postId/comments/:id', authenticate, [
 });
 
 // DELETE /api/posts/:postId/comments/:id
-router.delete('/:postId/comments/:id', authenticate, async (req: AuthRequest, res: any, next: any) => {
+router.delete('/:postId/comments/:id', authenticate, requireEmailVerified, async (req: AuthRequest, res: any, next: any) => {
   try {
     const comment = await Comment.findById(req.params.id);
     if (!comment) return res.status(404).json({ success: false, message: 'Comment not found' });
@@ -108,7 +108,7 @@ router.delete('/:postId/comments/:id', authenticate, async (req: AuthRequest, re
 });
 
 // POST /api/posts/:postId/comments/:id/like — toggle
-router.post('/:postId/comments/:id/like', authenticate, async (req: AuthRequest, res: any, next: any) => {
+router.post('/:postId/comments/:id/like', authenticate, requireEmailVerified, async (req: AuthRequest, res: any, next: any) => {
   try {
     const comment = await Comment.findById(req.params.id);
     if (!comment || comment.isDeleted) return res.status(404).json({ success: false, message: 'Comment not found' });

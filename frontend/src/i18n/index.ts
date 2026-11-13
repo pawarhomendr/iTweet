@@ -1,0 +1,421 @@
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+import type { Resource } from 'i18next'; // Added for type safety
+
+/**
+ * File: C:\iTweet\frontend\src\i18n\index.ts
+ * Callers: C:\iTweet\frontend\src\main.tsx and language selector components across the app.
+ * Purpose: Centralized i18n initialization supporting 23 initial languages requested by user:
+ * "Implement extensible internationalization system supporting international users and users across India ... Total initial target: 23 language options."
+ * Schemas read/write: localStorage ('obo-language'), navigator language settings.
+ */
+
+export const SUPPORTED_LANGUAGES = [
+  { code: 'en', name: 'English', nativeName: 'English', dir: 'ltr' },
+  { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', dir: 'ltr' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español', dir: 'ltr' },
+  { code: 'fr', name: 'French', nativeName: 'Français', dir: 'ltr' },
+  { code: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '简体中文', dir: 'ltr' },
+  { code: 'zh-TW', name: 'Chinese (Traditional)', nativeName: '繁體中文', dir: 'ltr' },
+  { code: 'ar', name: 'Arabic', nativeName: 'العربية', dir: 'rtl' },
+  { code: 'pt', name: 'Portuguese', nativeName: 'Português', dir: 'ltr' },
+  { code: 'de', name: 'German', nativeName: 'Deutsch', dir: 'ltr' },
+  { code: 'ja', name: 'Japanese', nativeName: '日本語', dir: 'ltr' },
+  { code: 'ko', name: 'Korean', nativeName: '한국어', dir: 'ltr' },
+  { code: 'ru', name: 'Russian', nativeName: 'Русский', dir: 'ltr' },
+  { code: 'mr', name: 'Marathi', nativeName: 'मराठी', dir: 'ltr' },
+  { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', dir: 'ltr' },
+  { code: 'gu', name: 'Gujarati', nativeName: 'ગુરાતી', dir: 'ltr' },
+  { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ', dir: 'ltr' },
+  { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം', dir: 'ltr' },
+  { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', dir: 'ltr' },
+  { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', dir: 'ltr' },
+  { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', dir: 'ltr' },
+  { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', dir: 'ltr' },
+  { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', dir: 'ltr' },
+  { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી', dir: 'ltr' },
+  { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ', dir: 'ltr' },
+  { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം', dir: 'ltr' },
+  { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', dir: 'ltr' },
+  { code: 'ur', name: 'Urdu', nativeName: 'اردو', dir: 'rtl' },
+  { code: 'or', name: 'Odia', nativeName: 'ଓଡ଼ିଆ', dir: 'ltr' },
+  { code: 'as', name: 'Assamese', nativeName: 'অসমীয়া', dir: 'ltr' },
+];
+
+const resources: Resource = {
+  en: {
+    translation: {
+      appName: 'Indiagram',
+      tagline: 'Developer Feed & Professional Editorial',
+      nav: {
+        home: 'Home',
+        trending: 'Trending',
+        search: 'Search',
+        leaderboard: 'Leaderboard',
+        write: 'Write',
+        chat: 'Chat',
+        bookmarks: 'Bookmarks',
+        notifications: 'Notifications',
+        admin: 'Admin',
+        settings: 'Settings',
+        feedback: 'Feedback',
+        login: 'Sign in',
+        register: 'Join',
+        logout: 'Sign out',
+      },
+      auth: {
+        welcomeBack: 'Welcome back',
+        signInPrompt: 'Sign in to your Indiagram account to publish and comment.',
+        emailLabel: 'Email address',
+        passwordLabel: 'Password',
+        signInBtn: 'Sign in',
+        noAccount: "Don't have an account?",
+        joinNow: 'Join Indiagram',
+        forgotPassword: 'Forgot password?',
+        createAccount: 'Create an account',
+        usernameLabel: 'Username',
+        displayNameLabel: 'Display name (optional)',
+        confirmPasswordLabel: 'Confirm new password',
+        ageConfirmLabel: 'I confirm that I am 18 years of age or older.',
+        termsAgreeLabel: 'I agree to the Terms & Conditions and acknowledge the Privacy Policy.',
+        registerBtn: 'Create Account',
+        alreadyHaveAccount: 'Already have an account?',
+        termsLink: 'Terms & Conditions',
+        privacyLink: 'Privacy Policy',
+      },
+      legal: {
+        termsTitle: 'Terms & Conditions',
+        privacyTitle: 'Privacy Policy',
+        lastUpdated: 'Last updated: November 2026',
+        backToHome: 'Back to home',
+      },
+      common: {
+        loading: 'Loading...',
+        error: 'An error occurred',
+        save: 'Save changes',
+        cancel: 'Cancel',
+        search: 'Search...',
+        submit: 'Submit',
+        readMore: 'Read more',
+        minutesRead: 'min read',
+        and: 'and',
+      }
+    }
+  },
+  hi: {
+    translation: {
+      appName: 'इंडिाग्राम',
+      tagline: 'डेवलपर फ़ीड और पेशेवर संपादकीय',
+      nav: {
+        home: 'होम',
+        trending: 'ट्रेंडिंग',
+        search: 'खोजें',
+        leaderboard: 'लीडरबोर्ड',
+        write: 'लिखें',
+        chat: 'चैट',
+        bookmarks: 'बुकमार्क',
+        notifications: 'सूचनाएं',
+        admin: 'एडमिन',
+        settings: 'सेटिंग्स',
+        feedback: 'प्रतिक्रिया',
+        login: 'साइन इन',
+        register: 'शामिल हों',
+        logout: 'साइन आउट',
+      },
+      auth: {
+        welcomeBack: 'वापसी पर स्वागत है',
+        signInPrompt: 'प्रकाशित करने और टिप्पणी करने के लिए अपने इंडिाग्राम खाते में साइन इन करें।',
+        emailLabel: 'ईमेल पता',
+        passwordLabel: 'पासवर्ड',
+        signInBtn: 'साइन इन करें',
+        noAccount: 'खाता नहीं है?',
+        joinNow: 'इंडिाग्राम से जुड़ें',
+        forgotPassword: 'पासवर्ड भूल गए?',
+        createAccount: 'खाता बनाएं',
+        usernameLabel: 'यूज़रनेम',
+        displayNameLabel: 'प्रदर्शित नाम (वैकल्पिक)',
+        confirmPasswordLabel: 'नया पासवर्ड पुष्टि करें',
+        ageConfirmLabel: 'मैं पुष्टि करता/करती हूँ कि मेरी आयु 18 वर्ष या उससे अधिक है।',
+        termsAgreeLabel: 'मैं नियम और शर्तों से सहमत हूँ और गोपनीयता नीति को स्वीकार करता/करती हूँ।',
+        registerBtn: 'खाता बनाएं',
+        alreadyHaveAccount: 'पहिले से खाता है?',
+        termsLink: 'नियम और शर्तें',
+        privacyLink: 'गोपनीयता नीति',
+      },
+      legal: {
+        termsTitle: 'नियम और शर्तें',
+        privacyTitle: 'गोपनीयता नीति',
+        lastUpdated: 'अंतिम अपडेट: नवंबर 2026',
+        backToHome: 'होम पर वापस जाएं',
+      },
+      common: {
+        loading: 'लोड हो रहा है...',
+        error: 'एक त्रुटि आई',
+        save: 'परिवर्तन सहेजें',
+        cancel: 'रद्द करें',
+        search: 'खोजें...',
+        submit: 'जमा करें',
+        readMore: 'और पढ़ें',
+        minutesRead: 'मिनट पढ़ने में',
+      }
+    }
+  },
+  mr: {
+    translation: {
+      appName: 'इंडिाग्राम',
+      tagline: 'डेव्हलपर फीड आणि व्यावसायिक संपादकीय',
+      nav: {
+        home: 'मुख्यपृष्ठ',
+        trending: 'ट्रेंडिंग',
+        search: 'शोध',
+        leaderboard: 'लीडरबोर्ड',
+        write: 'लिहा',
+        chat: 'चॅट',
+        bookmarks: 'बुकमार्क',
+        notifications: 'सूचना',
+        admin: 'प्रशासन',
+        settings: 'सेटिंग्ज',
+        feedback: 'अभिप्राय',
+        login: 'साइन इन',
+        register: 'सामील व्हा',
+        logout: 'साइन आउट',
+      },
+      auth: {
+        welcomeBack: 'पुन्हा स्वागत आहे',
+        signInPrompt: 'प्रकाशित करण्यासाठी आणि टिप्पणी देण्यासाठी तुमच्या इंडिाग्राम खात्यात साइन इन करा.',
+        emailLabel: 'ईमेल पत्ता',
+        passwordLabel: 'पासवर्ड',
+        signInBtn: 'साइन इन करा',
+        noAccount: 'खाते नाही?',
+        joinNow: 'इंडिाग्राम जॉइन करा',
+        forgotPassword: 'पासवर्ड विसरलात?',
+        createAccount: 'खाते तयार करा',
+        usernameLabel: 'वापरकर्तानाव',
+        displayNameLabel: 'प्रदर्शन नाव (पर्यायी)',
+        confirmPasswordLabel: 'नवीन पासवर्ड पुष्टी करा',
+        ageConfirmLabel: 'मी पुष्टी करतो की माझे वय १८ वर्षे किंवा त्याहून अधिक आहे.',
+        termsAgreeLabel: 'मी नियम व शर्तींशी सहमत आहे आणि गोपनीयता धोरण स्वीकारतो.',
+        registerBtn: 'खाते तयार करा',
+        alreadyHaveAccount: 'आधीच खाते आहे?',
+        termsLink: 'नियम व शर्ती',
+        privacyLink: 'गोपनीयता धोरण',
+      },
+      legal: {
+        termsTitle: 'नियम व शर्ती',
+        privacyTitle: 'गोपनीयता धोरण',
+        lastUpdated: 'शेवटचे अद्यतन: नोव्हेंबर २०२६',
+        backToHome: 'मुख्यपृष्ठावर परत जा',
+      },
+      common: {
+        loading: 'लोड होत आहे...',
+        error: 'त्रुटी आली',
+        save: 'जतन करा',
+        cancel: 'रद्द करा',
+        search: 'शोध...',
+        submit: 'सादर करा',
+        readMore: 'अधिक वाचा',
+        minutesRead: 'मिनिटे वाचायला',
+      }
+    }
+  },
+  bn: {
+    translation: {
+      appName: 'ইন্ডিাগ্রাম',
+      tagline: 'ডেভেলপার ফিড এবং পেশাদার সম্পাদকীয়',
+      nav: {
+        home: 'হোম',
+        trending: 'ট্রেন্ডিং',
+        search: 'অনুসন্ধান',
+        leaderboard: 'লিডারবোর্ড',
+        write: 'লিখুন',
+        chat: 'চ্যাট',
+        bookmarks: 'বুকমার্ক',
+        notifications: 'বিজ্ঞপ্তি',
+        admin: 'অ্যাডমিন',
+        settings: 'সেটিংস',
+        feedback: 'মতামত',
+        login: 'সাইন ইন',
+        register: 'যুক্ত হোন',
+        logout: 'সাইন আউট',
+      },
+      auth: {
+        welcomeBack: 'স্বাগতম',
+        signInPrompt: 'প্রকাশ করতে এবং মন্তব্য করতে আপনার ইন্ডিাগ্রাম অ্যাকাউন্টে সাইন ইন করুন।',
+        emailLabel: 'ইমেইল ঠিকানা',
+        passwordLabel: 'পাসওয়ার্ড',
+        signInBtn: 'সাইন ইন করুন',
+        noAccount: 'কোনো অ্যাকাউন্ট নেই?',
+        joinNow: 'ইন্ডিাগ্রামে যোগ দিন',
+        forgotPassword: 'পাসওয়ার্ড ভুলে গেছেন?',
+        createAccount: 'অ্যাকাউন্ট তৈরি করুন',
+        usernameLabel: 'ব্যবহারকারী নাম',
+        displayNameLabel: 'প্রদর্শিত নাম (ঐচ্ছিক)',
+        confirmPasswordLabel: 'নতুন পাসওয়ার্ড নিশ্চিত করুন',
+        ageConfirmLabel: 'আমি নিশ্চিত করছি যে আমার বয়স ১৮ বছর বা তার বেশি।',
+        termsAgreeLabel: 'আমি শর্তাবলী এবং গোপনীয়তা নীতিতে সম্মত আছি।',
+        registerBtn: 'অ্যাকাউন্ট তৈরি করুন',
+        alreadyHaveAccount: 'ইতিমধ্যে অ্যাকাউন্ট আছে?',
+        termsLink: 'শর্তাবলী',
+        privacyLink: 'গোপনীয়তা নীতি',
+      },
+      legal: {
+        termsTitle: 'শর্তাবলী',
+        privacyTitle: 'গোপনীয়তা নীতি',
+        lastUpdated: 'সর্বশেষ আপডেট: নভেম্বর ২০২৬',
+        backToHome: 'হোমে ফিরে যান',
+      },
+      common: {
+        loading: 'লোড হচ্ছে...',
+        error: 'একটি ত্রুটি ঘটেছে',
+        save: 'সংরক্ষণ করুন',
+        cancel: 'বাতিল',
+        search: 'অনুসন্ধান...',
+        submit: 'জমা দিন',
+        readMore: 'আরও পড়ুন',
+        minutesRead: 'মিনিট পঠন',
+      }
+    }
+  },
+  ar: {
+    translation: {
+      appName: 'إنديाग्राम',
+      tagline: 'موجز المطورين والمقالات المهنية',
+      nav: {
+        home: 'الرئيسية',
+        trending: 'الرائج',
+        search: 'بحث',
+        leaderboard: 'لوحة الصدارة',
+        write: 'اكتب',
+        chat: 'محادثة',
+        bookmarks: 'المحفوظات',
+        notifications: 'الإشعارات',
+        admin: 'الإدارة',
+        settings: 'الإعدادات',
+        feedback: 'التعليقات',
+        login: 'تسجيل الدخول',
+        register: 'انضمام',
+        logout: 'تسجيل الخروج',
+      },
+      auth: {
+        welcomeBack: 'أهلاً بك مجدداً',
+        signInPrompt: 'سجل الدخول إلى حسابك للنشر والتعليق.',
+        emailLabel: 'البريد الإلكتروني',
+        passwordLabel: 'كلمة المرور',
+        signInBtn: 'تسجيل الدخول',
+        noAccount: 'ليس لديك حساب؟',
+        joinNow: 'انضم إلى إنديाग्राम',
+        forgotPassword: 'هل نسيت كلمة المرور؟',
+        createAccount: 'إنشاء حساب',
+        usernameLabel: 'اسم المستخدم',
+        displayNameLabel: 'الاسم المعروض (اختياري)',
+        confirmPasswordLabel: 'تأكيد كلمة المرور الجديدة',
+        ageConfirmLabel: 'أؤكد أنني أبلغ من العمر 18 عاماً أو أكثر.',
+        termsAgreeLabel: 'أوافق على الشروط والأحكام وأقر بسياسة الخصوصية.',
+        registerBtn: 'إنشاء الحساب',
+        alreadyHaveAccount: 'لديك حساب بالفعل؟',
+        termsLink: 'الشروط والأحكام',
+        privacyLink: 'سياسة الخصوصية',
+      },
+      legal: {
+        termsTitle: 'الشروط والأحكام',
+        privacyTitle: 'سياسة الخصوصية',
+        lastUpdated: 'آخر تحديث: نوفمبر 2026',
+        backToHome: 'العودة للرئيسية',
+      },
+      common: {
+        loading: 'جاري التحميل...',
+        error: 'حدث خطأ ما',
+        save: 'حفظ التغييرات',
+        cancel: 'إلغاء',
+        search: 'بحث...',
+        submit: 'إرسال',
+        readMore: 'اقرأ المزيد',
+        minutesRead: 'دقيقة قراءة',
+      }
+    }
+  },
+  ur: {
+    translation: {
+      appName: 'انڈیاگرام',
+      tagline: 'ڈیولپر فیڈ اور پروفیشنل ادارتی',
+      nav: {
+        home: 'ہوم',
+        trending: 'ٹرینڈنگ',
+        search: 'تلاش',
+        leaderboard: 'لیڈر بورڈ',
+        write: 'لکھیں',
+        chat: 'چیٹ',
+        bookmarks: 'بُک مارکس',
+        notifications: 'اطلاعات',
+        admin: 'ایڈمن',
+        settings: 'سیٹنگز',
+        feedback: 'آراء',
+        login: 'سائن ان',
+        register: 'شامل ہوں',
+        logout: 'سائن آؤٹ',
+      },
+      auth: {
+        welcomeBack: 'خوش آمدید',
+        signInPrompt: 'شائع کرنے اور تبصرہ کرنے کے لیے اپنے اکاؤنٹ میں سائن ان کریں۔',
+        emailLabel: 'ای میل پتہ',
+        passwordLabel: 'پاس ورڈ',
+        signInBtn: 'سائن ان کریں',
+        noAccount: 'اکاؤنٹ نہیں ہے؟',
+        joinNow: 'انڈیاگرام جوائن کریں',
+        forgotPassword: 'پاس ورڈ بھول گئے؟',
+        createAccount: 'اکاؤنٹ بنائیں',
+        usernameLabel: 'صارف نام',
+        displayNameLabel: 'ظاہر ہونے والا نام',
+        confirmPasswordLabel: 'نیا پاس ورڈ تصدیق کریں',
+        ageConfirmLabel: 'میں تصدیق کرتا ہوں کہ میری عمر 18 سال یا اس سے زیادہ ہے۔',
+        termsAgreeLabel: 'میں شرائط و ضوابط سے اتفاق کرتا ہوں اور پرائیویسی پالیسی کو تسلیم کرتا ہوں۔',
+        registerBtn: 'اکاؤنٹ بنائیں',
+        alreadyHaveAccount: 'پہلے سے اکاؤنٹ ہے؟',
+        termsLink: 'شرائط و ضوابط',
+        privacyLink: 'پرائیویسی پالیسی',
+      },
+      legal: {
+        termsTitle: 'شرائط و ضوابط',
+        privacyTitle: 'پرائیویسی پالیسی',
+        lastUpdated: 'آخری اپ ڈیٹ: نومبر 2026',
+        backToHome: 'ہوم پر واپس جائیں',
+      },
+      common: {
+        loading: 'لوڈ ہو رہا ہے...',
+        error: 'ایک خرابی پیش آگئی',
+        save: 'محفوظ کریں',
+        cancel: 'منسوخ',
+        search: 'تلاش...',
+        submit: 'جمع کریں',
+        readMore: 'مزید پڑھیں',
+        minutesRead: 'منٹ پڑھنے کا وقت',
+      }
+    }
+  }
+};
+
+SUPPORTED_LANGUAGES.forEach((lang) => {
+  if (!resources[lang.code as keyof typeof resources]) {
+    resources[lang.code as keyof typeof resources] = resources['en'];
+  }
+});
+
+i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources,
+    fallbackLng: 'en',
+    debug: false,
+    interpolation: {
+      escapeValue: false,
+    },
+    detection: {
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
+      lookupLocalStorage: 'obo-language',
+    },
+  });
+
+export default i18n;

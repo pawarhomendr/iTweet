@@ -5,8 +5,6 @@ import { Post } from '../models/Post';
 import { Notification } from '../models/Notification';
 import { Report } from '../models/Report';
 import { Feedback } from '../models/Feedback';
-import { RewardLedger } from '../models/RewardLedger';
-import { VerificationRequest } from '../models/VerificationRequest';
 import { authenticate, requireAdmin, requireMod, AuthRequest } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { awardPoints } from '../services/rewards';

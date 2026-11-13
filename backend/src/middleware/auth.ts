@@ -6,6 +6,10 @@ export interface AuthRequest extends Request {
   user?: IUser;
 }
 
+export function isAccountUnavailable(user: Pick<IUser, 'isSuspended' | 'suspendedUntil' | 'isDisabled'>): boolean {
+  return user.isDisabled || (user.isSuspended && (!user.suspendedUntil || user.suspendedUntil > new Date()));
+}
+
 export function authenticate(req: AuthRequest, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
@@ -26,13 +30,10 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
           res.status(401).json({ success: false, message: 'Authentication required' });
           return;
         }
-        if (user.isSuspended) {
-          const until = user.suspendedUntil;
-          if (!until || until > new Date()) {
-            // FIX E-2: never leak the internal suspension reason
-            res.status(403).json({ success: false, message: 'Account suspended. Contact support for details.' });
-            return;
-          }
+        if (isAccountUnavailable(user)) {
+          // FIX E-2: never leak the internal suspension reason
+          res.status(403).json({ success: false, message: 'Account unavailable. Contact support for details.' });
+          return;
         }
         req.user = user;
         next();
@@ -41,6 +42,19 @@ export function authenticate(req: AuthRequest, res: Response, next: NextFunction
   } catch {
     res.status(401).json({ success: false, message: 'Invalid or expired token' });
   }
+}
+
+/** Mutating social actions require ownership of a verified email address. */
+export function requireEmailVerified(req: AuthRequest, res: Response, next: NextFunction): void {
+  if (!req.user?.emailVerified) {
+    res.status(403).json({
+      success: false,
+      code: 'EMAIL_VERIFICATION_REQUIRED',
+      message: 'Verify your email address before performing this action.',
+    });
+    return;
+  }
+  next();
 }
 
 export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction): void {
@@ -52,7 +66,7 @@ export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction
     // FIX A-1: pin algorithm
     const payload = jwt.verify(token, process.env.JWT_SECRET!, { algorithms: ['HS256'] }) as { userId: string };
     User.findById(payload.userId).then((user) => {
-      if (user && !user.isSuspended) req.user = user;
+      if (user && !isAccountUnavailable(user)) req.user = user;
       next();
     }).catch(() => next());
   } catch {

@@ -5,6 +5,14 @@ import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import './styles/globals.css';
+import './i18n';
+
+/**
+ * File: C:\iTweet\frontend\src\main.tsx
+ * Callers: Browser entrypoint.
+ * Purpose: Mount React app with QueryClient, BrowserRouter, Toaster, and i18n initialization.
+ * Instruction: "Implement extensible internationalization system supporting international users and users across India ... Total initial target: 23 language options."
+ */
 
 const queryClient = new QueryClient({
   defaultOptions: {

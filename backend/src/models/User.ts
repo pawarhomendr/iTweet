@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema, Types } from 'mongoose';
+import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export type UserRole = 'user' | 'moderator' | 'admin';
@@ -16,10 +16,12 @@ export interface IUser extends Document {
   role: UserRole;
   isVerified: boolean;
   isSuspended: boolean;
+  isDisabled: boolean;
   suspendedReason: string;
   suspendedUntil: Date | null;
   emailVerified: boolean;
   emailVerifyToken: string | null;
+  emailVerifyExpires: Date | null;
   passwordResetToken: string | null;
   passwordResetExpires: Date | null;
   refreshToken: string | null;
@@ -29,6 +31,11 @@ export interface IUser extends Document {
   followersCount: number;
   followingCount: number;
   postsCount: number;
+  lastSeen?: Date;
+  ageConfirmed: boolean;
+  ageConfirmedAt: Date | null;
+  termsAcceptedVersion: string;
+  termsAcceptedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidate: string): Promise<boolean>;
@@ -51,10 +58,12 @@ const userSchema = new Schema<IUser>(
     role: { type: String, enum: ['user', 'moderator', 'admin'], default: 'user' },
     isVerified: { type: Boolean, default: false },
     isSuspended: { type: Boolean, default: false },
+    isDisabled: { type: Boolean, default: false },
     suspendedReason: { type: String, default: '' },
     suspendedUntil: { type: Date, default: null },
     emailVerified: { type: Boolean, default: false },
     emailVerifyToken: { type: String, default: null, select: false },
+    emailVerifyExpires: { type: Date, default: null, select: false },
     passwordResetToken: { type: String, default: null, select: false },
     passwordResetExpires: { type: Date, default: null, select: false },
     refreshToken: { type: String, default: null, select: false },
@@ -64,6 +73,11 @@ const userSchema = new Schema<IUser>(
     followersCount: { type: Number, default: 0, min: 0 },
     followingCount: { type: Number, default: 0, min: 0 },
     postsCount: { type: Number, default: 0, min: 0 },
+    lastSeen: { type: Date, default: Date.now },
+    ageConfirmed: { type: Boolean, default: false },
+    ageConfirmedAt: { type: Date, default: null },
+    termsAcceptedVersion: { type: String, default: '' },
+    termsAcceptedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
@@ -104,6 +118,7 @@ userSchema.set('toJSON', {
 
     delete safe.password;
     delete safe.emailVerifyToken;
+    delete safe.emailVerifyExpires;
     delete safe.passwordResetToken;
     delete safe.passwordResetExpires;
     delete safe.refreshToken;

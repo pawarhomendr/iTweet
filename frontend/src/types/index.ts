@@ -4,6 +4,7 @@ export type UserRole = 'user' | 'moderator' | 'admin';
 export type CreatorLevel = 'newbie' | 'contributor' | 'regular' | 'veteran' | 'legend';
 export type PostStatus = 'draft' | 'pending' | 'published' | 'rejected';
 export type PostCategory = 'news' | 'tutorial' | 'opinion' | 'showcase' | 'discussion' | 'other';
+export type PostMediaType = 'post' | 'reel';
 export type NotificationType =
   | 'like_post' | 'like_comment' | 'comment' | 'reply' | 'follow'
   | 'post_approved' | 'post_rejected' | 'verification_approved' | 'verification_rejected' | 'message';
@@ -27,7 +28,10 @@ export interface User {
   followersCount: number;
   followingCount: number;
   postsCount: number;
+  lastSeen?: string;
+  isFollowing?: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Post {
@@ -39,6 +43,8 @@ export interface Post {
   body: string;
   coverImage: string;
   images: string[];
+  videoUrl?: string;
+  mediaType?: PostMediaType;
   category: PostCategory;
   tags: string[];
   sourceUrl: string;
@@ -48,16 +54,21 @@ export interface Post {
   likesCount: number;
   commentsCount: number;
   bookmarksCount: number;
+  repostsCount?: number;
   viewsCount: number;
   readMinutes: number;
   isPinned: boolean;
   isFeatured: boolean;
+  liked?: boolean;
+  bookmarked?: boolean;
+  reposted?: boolean;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Comment {
   _id: string;
-  post: string;
+  post: string | Post;
   author: User;
   parent: string | null;
   text: string;
@@ -78,8 +89,18 @@ export interface Message {
   conversation: string;
   sender: User;
   text: string;
+  imageUrl?: string;
+  gifUrl?: string;
+  reactions?: MessageReaction[];
   isRead: boolean;
   createdAt: string;
+}
+
+export interface MessageReaction {
+  userId: string;
+  username: string;
+  displayName: string;
+  emoji: '❤️' | '👍' | '😂' | '😮' | '😢' | '🔥';
 }
 
 export interface Notification {

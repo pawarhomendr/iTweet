@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import { VerificationRequest } from '../models/VerificationRequest';
 import { User } from '../models/User';
 import { Notification } from '../models/Notification';
-import { authenticate, requireMod, AuthRequest } from '../middleware/auth';
+import { authenticate, requireEmailVerified, requireMod, AuthRequest } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { emitNotification } from '../config/socket';
 
@@ -14,7 +14,7 @@ const ELIGIBILITY_FOLLOWERS = 20;
 const ELIGIBILITY_POINTS = 200;
 
 // POST /api/verification/apply
-router.post('/apply', authenticate, [
+router.post('/apply', authenticate, requireEmailVerified, [
   body('statement').trim().isLength({ min: 50, max: 800 }),
   body('links').optional().isArray({ max: 5 }),
 ], validate, async (req: AuthRequest, res: any, next: any) => {

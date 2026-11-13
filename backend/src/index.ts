@@ -1,7 +1,9 @@
-import dotenv from 'dotenv';
-dotenv.config({ path: '../.env' });
-import dns from 'node:dns';
-dns.setServers(['8.8.8.8']);
+import { validateProductionJwtSecrets } from './config/env';
+import { loadEnvironmentFiles } from './config/envFiles';
+
+// Canonical local file: backend/.env. Keep the legacy root .env as the first
+// fallback so existing setups retain precedence when both files are present.
+loadEnvironmentFiles(__dirname);
 
 // ─── FIX S-3: Validate required env vars at startup before anything else ───
 const REQUIRED_ENV = [
@@ -28,8 +30,11 @@ if (process.env.NODE_ENV === 'production') {
       process.exit(1);
     }
   }
-  if (process.env.JWT_SECRET!.length < 32) {
-    console.error('[startup] FATAL: JWT_SECRET must be at least 32 characters');
+  const secretErrors = validateProductionJwtSecrets(process.env);
+  if (secretErrors.length > 0) {
+    for (const message of secretErrors) {
+      console.error(`[startup] FATAL: ${message}`);
+    }
     process.exit(1);
   }
 }
@@ -58,6 +63,7 @@ import verificationRoutes from './routes/verification';
 import reportRoutes from './routes/reports';
 import adminRoutes from './routes/admin';
 import { errorHandler } from './middleware/errorHandler';
+import { REDACTED_MORGAN_FORMAT, registerRedactedMorganTokens } from './services/logging';
 
 const app = express();
 const server = http.createServer(app);
@@ -103,10 +109,11 @@ app.use(compression());
 app.use(mongoSanitize()); // prevent NoSQL injection via req.body/params/query
 
 // Logging — use 'combined' in production for structured logs; never log request bodies
+registerRedactedMorganTokens();
 if (process.env.NODE_ENV === 'production') {
-  app.use(morgan('combined'));
+  app.use(morgan(REDACTED_MORGAN_FORMAT));
 } else if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('dev'));
+  app.use(morgan(':method :safe-url :status :res[content-length] - :response-time ms'));
 }
 
 // FIX H-3: Global rate limit — now uses real client IP after trust proxy is set

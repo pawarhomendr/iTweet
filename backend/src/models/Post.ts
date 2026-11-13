@@ -2,6 +2,7 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export type PostStatus = 'draft' | 'pending' | 'published' | 'rejected';
 export type PostCategory = 'news' | 'tutorial' | 'opinion' | 'showcase' | 'discussion' | 'other';
+export type PostMediaType = 'post' | 'reel';
 
 export interface IPost extends Document {
   author: Types.ObjectId;
@@ -11,6 +12,8 @@ export interface IPost extends Document {
   body: string;
   coverImage: string;
   images: string[];
+  videoUrl: string;
+  mediaType: PostMediaType;
   category: PostCategory;
   tags: string[];
   sourceUrl: string;
@@ -20,6 +23,7 @@ export interface IPost extends Document {
   likesCount: number;
   commentsCount: number;
   bookmarksCount: number;
+  repostsCount: number;
   viewsCount: number;
   readMinutes: number;
   isPinned: boolean;
@@ -46,6 +50,8 @@ const postSchema = new Schema<IPost>(
     body: { type: String, required: true, maxlength: 50000 },
     coverImage: { type: String, default: '' },
     images: [{ type: String }],
+    videoUrl: { type: String, default: '' },
+    mediaType: { type: String, enum: ['post', 'reel'], default: 'post' },
     category: {
       type: String,
       enum: ['news', 'tutorial', 'opinion', 'showcase', 'discussion', 'other'],
@@ -59,6 +65,7 @@ const postSchema = new Schema<IPost>(
     likesCount: { type: Number, default: 0, min: 0 },
     commentsCount: { type: Number, default: 0, min: 0 },
     bookmarksCount: { type: Number, default: 0, min: 0 },
+    repostsCount: { type: Number, default: 0, min: 0 },
     viewsCount: { type: Number, default: 0, min: 0 },
     readMinutes: { type: Number, default: 1, min: 1 },
     isPinned: { type: Boolean, default: false },
@@ -70,7 +77,7 @@ const postSchema = new Schema<IPost>(
 // Auto-generate slug from title
 postSchema.pre('save', async function (next) {
   if (!this.isModified('title') && this.slug) return next();
-  let base = slugify(this.title);
+  const base = slugify(this.title);
   let slug = base;
   let i = 1;
   while (await mongoose.model('Post').exists({ slug, _id: { $ne: this._id } })) {

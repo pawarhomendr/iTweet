@@ -6,19 +6,36 @@ import { User } from '../models/User';
 import { validate } from '../middleware/validate';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { sendEmail, passwordResetEmail, emailVerifyEmail } from '../services/email';
+import { hashToken } from '../services/tokens';
+import { canLinkGoogleAccount, GoogleAuthConfigurationError, verifyGoogleCredential } from '../services/googleAuth';
 import { rateLimit } from 'express-rate-limit';
 
-// Helper: hash a token before DB storage (never store plaintext reset/refresh tokens)
-function hashToken(raw: string): string {
-  return crypto.createHash('sha256').update(raw).digest('hex');
+const router = Router();
+const authLimiter = rateLimit({ windowMs: 15 * 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
+const EMAIL_VERIFY_TTL_MS = 24 * 60 * 60_000;
+
+function trustedFrontendUrl(): string {
+  const raw = process.env.FRONTEND_URL;
+  if (!raw) throw new Error('FRONTEND_URL is not configured');
+  const url = new URL(raw);
+  if (!['http:', 'https:'].includes(url.protocol)) throw new Error('FRONTEND_URL must use HTTP or HTTPS');
+  return url.toString().replace(/\/$/, '');
 }
 
-const router = Router();
+function buildFrontendLink(pathname: string, token: string): string {
+  const url = new URL(pathname, `${trustedFrontendUrl()}/`);
+  url.searchParams.set('token', token);
+  return url.toString();
+}
 
-const authLimiter = rateLimit({ windowMs: 15 * 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
+function createEmailVerificationToken() {
+  return {
+    rawToken: crypto.randomBytes(32).toString('hex'),
+    expires: new Date(Date.now() + EMAIL_VERIFY_TTL_MS),
+  };
+}
 
 function signTokens(userId: string, username: string) {
-  // FIX S-1 / A-1: pin algorithm explicitly
   const access = jwt.sign({ userId, username }, process.env.JWT_SECRET!, {
     algorithm: 'HS256',
     expiresIn: (process.env.JWT_EXPIRES_IN ?? '15m') as any,
@@ -31,14 +48,11 @@ function signTokens(userId: string, username: string) {
 }
 
 function setCookies(res: any, refresh: string) {
-  // FIX S-1: set only the refresh token as httpOnly cookie.
-  // The access token is returned in-memory via JSON and stored in module memory only —
-  // never in localStorage. Refresh cookie path-scoped to /api/auth/refresh.
   const isProd = process.env.NODE_ENV === 'production';
   res.cookie('refresh_token', refresh, {
     httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? 'strict' : 'lax',  // FIX A-3: strict in prod
+    sameSite: isProd ? 'strict' : 'lax',
     maxAge: 30 * 86400_000,
     path: '/api/auth/refresh',
   });
@@ -53,26 +67,29 @@ router.post('/register', authLimiter, [
 ], validate, async (req: AuthRequest, res: any, next: any) => {
   try {
     const { username, email, password, displayName } = req.body;
-    // FIX A-5: generic message to avoid email enumeration
     const existing = await User.findOne({ $or: [{ email }, { username: username.toLowerCase() }] }).lean();
     if (existing) {
-      return res.status(409).json({ success: false, message: 'An account with those details already exists.' });
+      return res.status(409).json({ success: false, message: 'Unable to create an account with those details.' });
     }
-    // Email verify token — store hash, send raw to user
-    const rawVerifyToken = crypto.randomBytes(32).toString('hex');
+    const { rawToken: rawVerifyToken, expires: verifyExpires } = createEmailVerificationToken();
     const user = await User.create({
       username: username.toLowerCase(), email, password,
       displayName: displayName || username,
-      emailVerifyToken: hashToken(rawVerifyToken),  // FIX A-4: store hash
+      emailVerifyToken: hashToken(rawVerifyToken),
+      emailVerifyExpires: verifyExpires,
     });
-    const verifyLink = `${process.env.FRONTEND_URL}/verify-email?token=${rawVerifyToken}`;
-    await sendEmail({ to: email, subject: 'Verify your Off By One account', html: emailVerifyEmail(verifyLink) });
-    const { access, refresh } = signTokens(String(user._id), user.username);
-    // FIX A-2: store hash of refresh token, not the raw value
-    await User.findByIdAndUpdate(user._id, { refreshToken: hashToken(refresh) });
-    setCookies(res, refresh);
-    // FIX S-1: return access token in JSON body only — frontend must store in memory, NOT localStorage
-    res.status(201).json({ success: true, message: 'Account created. Check your email to verify.', data: { token: access, user } });
+    const verifyLink = buildFrontendLink('/verify-email', rawVerifyToken);
+    try {
+      await sendEmail({ to: email, subject: 'Verify your Indiagram account', html: emailVerifyEmail(verifyLink) });
+    } catch (error) {
+      console.error(`[email] verification delivery failed code=${error instanceof Error && 'code' in error ? String(error.code) : 'UNKNOWN'}`);
+      return res.status(503).json({ success: false, message: 'Your account was created, but verification email delivery is temporarily unavailable. Please try again.' });
+    }
+    res.status(201).json({
+      success: true,
+      message: 'Account created. Check your email to verify.',
+      data: { user, requiresEmailVerification: true },
+    });
   } catch (err) { next(err); }
 });
 
@@ -88,15 +105,76 @@ router.post('/login', authLimiter, [
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
     if (user.isSuspended && (!user.suspendedUntil || user.suspendedUntil > new Date())) {
-      // FIX E-2: don't leak the internal suspension reason to the client
       return res.status(403).json({ success: false, message: 'Account suspended. Contact support for details.' });
     }
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        code: 'EMAIL_VERIFICATION_REQUIRED',
+        message: 'Please verify your email address before signing in.',
+      });
+    }
     const { access, refresh } = signTokens(String(user._id), user.username);
-    // FIX A-2: store hash of refresh token
     await User.findByIdAndUpdate(user._id, { refreshToken: hashToken(refresh) });
     setCookies(res, refresh);
     res.json({ success: true, data: { token: access, user } });
   } catch (err) { next(err); }
+});
+
+// POST /api/auth/google — Google OAuth login/registration
+router.post('/google', authLimiter, [
+  body('credential').notEmpty().withMessage('Google credential token required'),
+], validate, async (req: any, res: any) => {
+  try {
+    const identity = await verifyGoogleCredential(req.body.credential);
+    const { email, name, picture } = identity;
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      // Auto-register user from Google profile
+      let baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 24);
+      if (baseUsername.length < 3) baseUsername = 'user_' + Math.random().toString(36).substring(2, 7);
+      let username = baseUsername;
+      let i = 1;
+      while (await User.exists({ username })) {
+        username = `${baseUsername}${i++}`;
+      }
+      const randomPassword = crypto.randomBytes(24).toString('hex');
+      user = await User.create({
+        username,
+        email,
+        password: randomPassword,
+        displayName: name || username,
+        avatar: picture || '',
+        emailVerified: true,
+      });
+    }
+
+    if (user.isDisabled || (user.isSuspended && (!user.suspendedUntil || user.suspendedUntil > new Date()))) {
+      return res.status(403).json({ success: false, message: 'Account unavailable.' });
+    }
+
+    if (!user.emailVerified && canLinkGoogleAccount(identity, user.email)) {
+      user.emailVerified = true;
+      user.emailVerifyToken = null;
+      user.emailVerifyExpires = null;
+      await user.save();
+    }
+
+    if (!user.emailVerified) {
+      return res.status(403).json({ success: false, message: 'Google account email could not be verified.' });
+    }
+
+    const { access, refresh } = signTokens(String(user._id), user.username);
+    await User.findByIdAndUpdate(user._id, { refreshToken: hashToken(refresh) });
+    setCookies(res, refresh);
+    res.json({ success: true, data: { token: access, user } });
+  } catch (error) {
+    if (error instanceof GoogleAuthConfigurationError) {
+      return res.status(503).json({ success: false, message: 'Google authentication is not configured.' });
+    }
+    return res.status(401).json({ success: false, message: 'Google authentication failed. Please check credentials or configure Google client.' });
+  }
 });
 
 // POST /api/auth/logout
@@ -110,18 +188,19 @@ router.post('/logout', authenticate, async (req: AuthRequest, res: any, next: an
 });
 
 // POST /api/auth/refresh
-router.post('/refresh', async (req: any, res: any, next: any) => {
+router.post('/refresh', async (req: any, res: any) => {
   const token = req.cookies?.refresh_token;
   if (!token) return res.status(401).json({ success: false, message: 'No refresh token' });
   try {
-    // FIX A-1: pin algorithm
     const payload = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET!, { algorithms: ['HS256'] }) as { userId: string };
     const user = await User.findById(payload.userId).select('+refreshToken');
-    // FIX A-2: compare against stored hash
     if (!user || user.refreshToken !== hashToken(token)) {
-      // Possible token reuse — invalidate all sessions for this user
       if (user) await User.findByIdAndUpdate(user._id, { refreshToken: null });
       return res.status(401).json({ success: false, message: 'Invalid refresh token' });
+    }
+    if (!user.emailVerified) {
+      await User.findByIdAndUpdate(user._id, { refreshToken: null });
+      return res.status(403).json({ success: false, code: 'EMAIL_VERIFICATION_REQUIRED', message: 'Please verify your email address before signing in.' });
     }
     const { access, refresh } = signTokens(String(user._id), user.username);
     await User.findByIdAndUpdate(user._id, { refreshToken: hashToken(refresh) });
@@ -134,26 +213,52 @@ router.post('/refresh', async (req: any, res: any, next: any) => {
 router.post('/forgot-password', authLimiter, [body('email').isEmail().normalizeEmail()], validate, async (req: any, res: any, next: any) => {
   try {
     const user = await User.findOne({ email: req.body.email });
-    if (user) {
-      const rawToken = crypto.randomBytes(32).toString('hex');
-      const expires = new Date(Date.now() + 3600_000);
-      // FIX A-4: store hash, send raw token in link only
-      await User.findByIdAndUpdate(user._id, { passwordResetToken: hashToken(rawToken), passwordResetExpires: expires });
-      const link = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}`;
-      await sendEmail({ to: user.email, subject: 'Reset your Off By One password', html: passwordResetEmail(link) });
+    if (!user) {
+      return res.status(202).json({ success: true, message: 'If the account is eligible, reset instructions will be sent.' });
     }
-    // Always 200 to avoid email enumeration
-    res.json({ success: true, message: 'If that email exists, a reset link has been sent.' });
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 3600_000);
+    await User.findByIdAndUpdate(user._id, { passwordResetToken: hashToken(rawToken), passwordResetExpires: expires });
+    const link = buildFrontendLink('/reset-password', rawToken);
+    try {
+      await sendEmail({ to: user.email, subject: 'Reset your Indiagram password', html: passwordResetEmail(link) });
+    } catch (error) {
+      console.error(`[email] password reset delivery failed code=${error instanceof Error && 'code' in error ? String(error.code) : 'UNKNOWN'}`);
+      return res.status(503).json({ success: false, message: 'Password reset email delivery is temporarily unavailable. Please try again later.' });
+    }
+    res.status(202).json({ success: true, message: 'If the account is eligible, reset instructions will be sent.' });
+  } catch (err) { next(err); }
+});
+
+// POST /api/auth/resend-verification — generic response prevents account enumeration
+router.post('/resend-verification', authLimiter, [body('email').isEmail().normalizeEmail()], validate, async (req: any, res: any, next: any) => {
+  try {
+    const generic = { success: true, message: 'If the account is eligible, a verification email will be sent.' };
+    const user = await User.findOne({ email: req.body.email }).select('+emailVerifyToken +emailVerifyExpires');
+    if (!user || user.emailVerified) return res.status(202).json(generic);
+
+    const { rawToken, expires } = createEmailVerificationToken();
+    await User.findByIdAndUpdate(user._id, { emailVerifyToken: hashToken(rawToken), emailVerifyExpires: expires });
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: 'Verify your Indiagram account',
+        html: emailVerifyEmail(buildFrontendLink('/verify-email', rawToken)),
+      });
+    } catch (error) {
+      console.error(`[email] verification resend failed code=${error instanceof Error && 'code' in error ? String(error.code) : 'UNKNOWN'}`);
+    }
+    return res.status(202).json(generic);
   } catch (err) { next(err); }
 });
 
 // POST /api/auth/reset-password
 router.post('/reset-password', authLimiter, [
-  body('token').notEmpty().isLength({ max: 128 }),
+  body('token').isHexadecimal().isLength({ min: 64, max: 128 }),
   body('password').isLength({ min: 8 }),
 ], validate, async (req: any, res: any, next: any) => {
   try {
-    // FIX A-4: look up by hash of the submitted token
     const user = await User.findOne({
       passwordResetToken: hashToken(req.body.token),
       passwordResetExpires: { $gt: new Date() },
@@ -162,7 +267,7 @@ router.post('/reset-password', authLimiter, [
     user.password = req.body.password;
     user.passwordResetToken = null;
     user.passwordResetExpires = null;
-    user.refreshToken = null; // Invalidate all existing sessions
+    user.refreshToken = null;
     await user.save();
     res.json({ success: true, message: 'Password updated. Please log in.' });
   } catch (err) { next(err); }
@@ -173,13 +278,17 @@ router.get('/verify-email', async (req: any, res: any, next: any) => {
   try {
     const rawToken = String(req.query.token ?? '').slice(0, 128);
     if (!rawToken) return res.status(400).json({ success: false, message: 'Missing token' });
-    // FIX A-4: look up by hash
-    const user = await User.findOne({ emailVerifyToken: hashToken(rawToken) }).select('+emailVerifyToken');
+    if (!/^[a-f0-9]{64}$/i.test(rawToken)) return res.status(400).json({ success: false, message: 'Invalid verification token' });
+    const user = await User.findOne({
+      emailVerifyToken: hashToken(rawToken),
+      emailVerifyExpires: { $gt: new Date() },
+    }).select('+emailVerifyToken +emailVerifyExpires');
     if (!user) return res.status(400).json({ success: false, message: 'Invalid verification token' });
     user.emailVerified = true;
     user.emailVerifyToken = null;
+    user.emailVerifyExpires = null;
     await user.save();
-    res.json({ success: true, message: 'Email verified!' });
+    res.json({ success: true, message: 'Email verified successfully!' });
   } catch (err) { next(err); }
 });
 

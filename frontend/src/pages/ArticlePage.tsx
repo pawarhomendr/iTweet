@@ -6,6 +6,9 @@ import type { Post, Comment } from '@/types';
 import { useAuthStore } from '@/store/auth';
 import { HeartIcon, BookmarkIcon, CheckBadgeIcon } from '@/components/ui/Icons';
 import toast from 'react-hot-toast';
+import { PageBackButton } from '@/components/layout/PageBackButton';
+import { isSafeHttpUrl } from '@/lib/validation';
+import { normalizeAuthor } from '@/lib/safeAuthor';
 
 export const ArticlePage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -38,7 +41,7 @@ export const ArticlePage: React.FC = () => {
   const likeMutation = useMutation({
     mutationFn: async () => {
       if (!isAuthenticated()) {
-        toast.error('Please log in to like');
+        toast.error('Please log in to like this post');
         return;
       }
       return api.post(`/posts/${data!.post._id}/like`);
@@ -50,7 +53,7 @@ export const ArticlePage: React.FC = () => {
   const bookmarkMutation = useMutation({
     mutationFn: async () => {
       if (!isAuthenticated()) {
-        toast.error('Please log in to bookmark');
+        toast.error('Please log in to bookmark this post');
         return;
       }
       return api.post(`/posts/${data!.post._id}/bookmark`);
@@ -89,8 +92,10 @@ export const ArticlePage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="shell page-content">
-        <div className="skeleton" style={{ height: '40px', width: '70%', marginBottom: '20px' }} />
+      <div className="shell page-content" style={{ maxWidth: '720px' }}>
+        <div className="skeleton" style={{ height: '24px', width: '30%', marginBottom: '20px' }} />
+        <div className="skeleton" style={{ height: '48px', width: '90%', marginBottom: '24px' }} />
+        <div className="skeleton" style={{ height: '200px', width: '100%', marginBottom: '24px' }} />
         <div className="skeleton" style={{ height: '300px', width: '100%' }} />
       </div>
     );
@@ -99,130 +104,276 @@ export const ArticlePage: React.FC = () => {
   if (error || !data) {
     return (
       <div className="shell page-content empty-state">
-        <h2>Post not found</h2>
-        <p>This post might have been removed or is pending approval.</p>
-        <Link to="/" className="btn btn-sm" style={{ marginTop: '20px' }}>Back to feed</Link>
+        <h2 style={{ fontFamily: 'var(--heading)', fontSize: '28px', color: 'var(--ink)' }}>Post not found</h2>
+        <p style={{ marginTop: '8px' }}>This post might have been removed or is pending approval.</p>
+        <Link to="/" className="btn btn-sm btn-ghost" style={{ marginTop: '24px' }}>
+          Back to feed
+        </Link>
       </div>
     );
   }
 
   const { post, liked, bookmarked } = data;
   const comments = commentsData?.comments ?? [];
+  const safeSourceUrl = isSafeHttpUrl(post.sourceUrl) ? post.sourceUrl.trim() : null;
+  const author = normalizeAuthor(post.author);
 
   return (
-    <article className="shell page-content" style={{ maxWidth: '780px' }}>
+    <article className="shell page-content" style={{ maxWidth: '720px' }}>
+      <PageBackButton fallback="/" />
       {/* Category & Date */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', fontFamily: 'var(--mono)', fontSize: '12px' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          marginBottom: '16px',
+          fontFamily: 'var(--mono)',
+          fontSize: '11px',
+          color: 'var(--muted)',
+        }}
+      >
         <span className="badge">{post.category}</span>
-        <span className="dim">·</span>
-        <span className="dim">{new Date(post.publishedAt || post.createdAt).toLocaleDateString()}</span>
-        <span className="dim">·</span>
-        <span className="dim">{post.readMinutes} min read</span>
+        <span aria-hidden="true" style={{ opacity: 0.5 }}>·</span>
+        <span>{new Date(post.publishedAt || post.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+        <span aria-hidden="true" style={{ opacity: 0.5 }}>·</span>
+        <span>{post.readMinutes} min read</span>
       </div>
 
       {/* Title */}
-      <h1 style={{ fontSize: 'clamp(32px, 5vw, 44px)', letterSpacing: '-.03em', lineHeight: 1.15, marginBottom: '20px' }}>
+      <h1
+        style={{
+          fontFamily: 'var(--editorial)',
+          fontSize: 'clamp(30px, 5vw, 46px)',
+          fontWeight: 600,
+          letterSpacing: '-.025em',
+          lineHeight: 1.18,
+          marginBottom: '28px',
+          color: 'var(--ink)',
+        }}
+      >
         {post.title}
       </h1>
 
-      {/* Author Card */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderTop: '1px solid var(--rule)', borderBottom: '1px solid var(--rule)', marginBottom: '32px' }}>
-        <Link to={`/u/${post.author.username}`} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img
-            src={post.author.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${post.author.username}`}
-            alt={post.author.username}
-            className="avatar avatar-md"
-          />
-          <div>
-            <div style={{ fontWeight: 600, fontSize: '15px' }}>
-              {post.author.displayName || post.author.username}
-              {post.author.isVerified && <CheckBadgeIcon />}
+      {/* Author Byline */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 0',
+          borderTop: '1px solid var(--rule)',
+          borderBottom: '1px solid var(--rule)',
+          marginBottom: '36px',
+          gap: '16px',
+          flexWrap: 'wrap',
+        }}
+      >
+        {author ? (
+          <Link
+            to={`/u/${author.username}`}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+          >
+            <img
+              src={
+                author.avatar ||
+                `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(author.username)}`
+              }
+              alt=""
+              aria-hidden="true"
+              className="avatar avatar-md"
+              style={{ border: '2px solid var(--rule)' }}
+            />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '15px', display: 'flex', alignItems: 'center' }}>
+                {author.displayName || author.username}
+                {author.isVerified && <CheckBadgeIcon />}
+              </div>
+              <div className="dim mono" style={{ fontSize: '11.5px', marginTop: '2px' }}>
+                @{author.username}{author.level && <> · <span style={{ textTransform: 'capitalize' }}>{author.level}</span></>}
+              </div>
             </div>
-            <div className="dim mono" style={{ fontSize: '12px' }}>@{post.author.username} · {post.author.level}</div>
+          </Link>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--muted)' }}>
+            <div className="avatar avatar-md" aria-hidden="true" style={{ border: '2px solid var(--rule)' }} />
+            <span style={{ fontWeight: 500 }}>Deleted user</span>
           </div>
-        </Link>
+        )}
 
-        {/* Actions: Like, Bookmark, Report */}
+        {/* Action bar: Like, Bookmark, Report */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button className="icon-btn" onClick={() => likeMutation.mutate()} aria-label="Like post">
+          <button
+            className="icon-btn"
+            onClick={() => likeMutation.mutate()}
+            aria-label={liked ? 'Unlike post' : 'Like post'}
+            style={liked ? { color: 'var(--accent)', borderColor: 'var(--accent)', background: 'var(--accent-soft)' } : undefined}
+          >
             <HeartIcon filled={liked} />
           </button>
-          <span className="mono dim" style={{ fontSize: '12px' }}>{post.likesCount}</span>
+          <span className="mono dim" style={{ fontSize: '12px', minWidth: '20px' }}>
+            {post.likesCount}
+          </span>
 
-          <button className="icon-btn" onClick={() => bookmarkMutation.mutate()} aria-label="Bookmark post">
+          <button
+            className="icon-btn"
+            onClick={() => bookmarkMutation.mutate()}
+            aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark post'}
+            style={bookmarked ? { color: 'var(--accent)', borderColor: 'var(--accent)', background: 'var(--accent-soft)' } : undefined}
+          >
             <BookmarkIcon filled={bookmarked} />
           </button>
 
-          <button className="icon-btn" onClick={() => setReportOpen(!reportOpen)} aria-label="Report post">
-            <span style={{ fontSize: '14px' }}>⚑</span>
+          <button
+            className="icon-btn"
+            onClick={() => setReportOpen(!reportOpen)}
+            aria-label="Report this post"
+            aria-expanded={reportOpen}
+          >
+            <span style={{ fontSize: '14px', lineHeight: 1 }}>⚑</span>
           </button>
         </div>
       </div>
 
-      {/* Report Modal */}
+      {/* Report Form */}
       {reportOpen && (
-        <div className="card" style={{ padding: '16px', marginBottom: '24px' }}>
-          <h4 style={{ marginBottom: '8px' }}>Report this post</h4>
-          <div className="field" style={{ marginBottom: '12px' }}>
-            <label>Reason</label>
-            <select value={reportReason} onChange={(e) => setReportReason(e.target.value)}>
-              <option value="spam">Spam / Advertising</option>
-              <option value="harassment">Harassment</option>
-              <option value="misinformation">Misinformation</option>
-              <option value="hate_speech">Hate Speech</option>
-              <option value="other">Other</option>
+        <div
+          className="card"
+          style={{
+            padding: '20px',
+            marginBottom: '32px',
+            background: 'var(--surface-2)',
+            border: '1.5px solid var(--rule)',
+          }}
+        >
+          <h4 style={{ marginBottom: '10px', fontSize: '15px' }}>Report this post</h4>
+          <div className="field" style={{ marginBottom: '14px' }}>
+            <label htmlFor="report-reason">Reason for report</label>
+            <select
+              id="report-reason"
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+            >
+              <option value="spam">Spam or unwanted advertising</option>
+              <option value="harassment">Harassment or personal attack</option>
+              <option value="misinformation">Misleading technical information</option>
+              <option value="hate_speech">Hate speech or abusive content</option>
+              <option value="other">Other reason</option>
             </select>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn btn-sm btn-danger" onClick={() => reportMutation.mutate()}>Submit Report</button>
-            <button className="btn btn-sm btn-ghost" onClick={() => setReportOpen(false)}>Cancel</button>
+            <button
+              className="btn btn-sm btn-danger"
+              onClick={() => reportMutation.mutate()}
+              disabled={reportMutation.isPending}
+            >
+              {reportMutation.isPending ? 'Submitting...' : 'Submit Report'}
+            </button>
+            <button
+              className="btn btn-sm btn-ghost"
+              onClick={() => setReportOpen(false)}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
 
       {/* Cover Image */}
       {post.coverImage && (
-        <img
-          src={post.coverImage}
-          alt={post.title}
-          style={{ width: '100%', borderRadius: 'var(--radius)', marginBottom: '32px' }}
-        />
+        <figure style={{ margin: '0 0 36px 0' }}>
+          <img
+            src={post.coverImage}
+            alt={post.title}
+            style={{
+              width: '100%',
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--rule)',
+              boxShadow: 'var(--shadow-sm)',
+            }}
+          />
+        </figure>
       )}
 
       {/* Article Body */}
-      <div className="article-body" dangerouslySetInnerHTML={{ __html: post.body }} />
+      <div
+        className="article-body"
+        dangerouslySetInnerHTML={{ __html: post.body }}
+      />
 
       {/* Image Gallery */}
       {post.images && post.images.length > 0 && (
-        <div style={{ marginTop: '36px' }}>
-          <p className="eyebrow">// gallery</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '12px' }}>
+        <section style={{ marginTop: '40px' }} aria-label="Attached images">
+          <p className="eyebrow">{'// gallery'}</p>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '14px',
+              marginTop: '12px',
+            }}
+          >
             {post.images.map((img, i) => (
-              <img key={i} src={img} alt={`Gallery ${i}`} style={{ borderRadius: 'var(--radius-sm)', width: '100%', height: '180px', objectFit: 'cover' }} />
+              <img
+                key={i}
+                src={img}
+                alt={`Post attachment ${i + 1}`}
+                style={{
+                  borderRadius: 'var(--radius-sm)',
+                  width: '100%',
+                  height: '190px',
+                  objectFit: 'cover',
+                  border: '1px solid var(--rule)',
+                }}
+              />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {/* Source Link */}
-      {post.sourceUrl && (
-        <p className="mono" style={{ marginTop: '32px', fontSize: '13px' }}>
-          Source: <a href={post.sourceUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>{post.sourceUrl}</a>
+      {safeSourceUrl && (
+        <p className="mono" style={{ marginTop: '36px', fontSize: '13px' }}>
+          <span style={{ color: 'var(--muted)' }}>Source: </span>
+          <a
+            href={safeSourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--accent)', textDecoration: 'underline' }}
+          >
+            {safeSourceUrl}
+          </a>
         </p>
       )}
 
       {/* Tags */}
-      <div style={{ marginTop: '24px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          marginTop: '28px',
+          display: 'flex',
+          gap: '8px',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+        }}
+      >
+        <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--muted)' }}>Tags:</span>
         {post.tags.map((t) => (
           <span key={t} className="chip">#{t}</span>
         ))}
       </div>
 
-      <hr className="divider" style={{ margin: '48px 0' }} />
+      <hr className="divider" style={{ margin: '52px 0 44px' }} />
 
       {/* Comments Section */}
-      <section>
-        <h3 style={{ fontSize: '22px', marginBottom: '20px' }}>Discussion ({comments.length})</h3>
+      <section aria-label="Discussion">
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <h2 style={{ fontFamily: 'var(--heading)', fontSize: '24px', fontWeight: 600, color: 'var(--ink)' }}>
+            Discussion
+          </h2>
+          <span className="mono dim" style={{ fontSize: '13px' }}>
+            {comments.length} {comments.length === 1 ? 'response' : 'responses'}
+          </span>
+        </div>
 
         {/* Comment Input */}
         {isAuthenticated() ? (
@@ -231,57 +382,110 @@ export const ArticlePage: React.FC = () => {
               e.preventDefault();
               if (commentText.trim()) commentMutation.mutate(commentText);
             }}
-            style={{ marginBottom: '32px' }}
+            style={{ marginBottom: '36px' }}
           >
             <div className="field">
               <textarea
-                placeholder="Leave a thoughtful response..."
+                placeholder="Share your thoughts, benchmarks, or feedback..."
                 rows={3}
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
+                aria-label="Write a comment"
               />
             </div>
             <button
               type="submit"
               className="btn btn-sm btn-accent"
-              style={{ marginTop: '10px' }}
+              style={{ marginTop: '12px' }}
               disabled={commentMutation.isPending || !commentText.trim()}
             >
-              Post comment
+              {commentMutation.isPending ? 'Posting...' : 'Post comment (+5 pts)'}
             </button>
           </form>
         ) : (
-          <p className="mono dim" style={{ marginBottom: '24px' }}>
-            <Link to="/login" style={{ color: 'var(--accent)' }}>Log in</Link> to join the discussion.
-          </p>
+          <div
+            className="card"
+            style={{
+              padding: '20px',
+              textAlign: 'center',
+              marginBottom: '32px',
+              background: 'var(--surface-2)',
+            }}
+          >
+            <p className="dim mono" style={{ fontSize: '13px' }}>
+              <Link to="/login" style={{ color: 'var(--accent)', fontWeight: 500 }}>
+                Sign in
+              </Link>{' '}
+              to join the discussion and earn points.
+            </p>
+          </div>
         )}
 
         {/* Comment List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {comments.map((c) => (
-            <div key={c._id} style={{ display: 'flex', gap: '14px' }}>
-              <img
-                src={c.author.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.author.username}`}
-                alt={c.author.username}
-                className="avatar avatar-sm"
-              />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <Link to={`/u/${c.author.username}`} style={{ fontWeight: 600, fontSize: '14px' }}>
-                    {c.author.displayName || c.author.username}
-                    {c.author.isVerified && <CheckBadgeIcon />}
-                  </Link>
-                  <span className="dim mono" style={{ fontSize: '11px' }}>
-                    {new Date(c.createdAt).toLocaleDateString()}
-                  </span>
+        {comments.length === 0 ? (
+          <p className="dim" style={{ fontFamily: 'var(--prose)', fontStyle: 'italic', padding: '16px 0' }}>
+            No responses yet. Be the first to share your perspective.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {comments.map((c) => (
+              <div
+                key={c._id}
+                style={{
+                  display: 'flex',
+                  gap: '14px',
+                  paddingBottom: '20px',
+                  borderBottom: '1px solid var(--rule-2)',
+                }}
+              >
+                {(() => {
+                  const commentAuthor = normalizeAuthor(c.author);
+                  return commentAuthor ? (
+                    <img
+                      src={
+                        commentAuthor.avatar ||
+                        `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(commentAuthor.username)}`
+                      }
+                      alt=""
+                      aria-hidden="true"
+                      className="avatar avatar-sm"
+                      style={{ border: '1.5px solid var(--rule)' }}
+                    />
+                  ) : (
+                    <div className="avatar avatar-sm" aria-hidden="true" style={{ border: '1.5px solid var(--rule)' }} />
+                  );
+                })()}
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    {(() => {
+                      const commentAuthor = normalizeAuthor(c.author);
+                      return commentAuthor ? (
+                        <Link
+                          to={`/u/${commentAuthor.username}`}
+                          style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--ink)' }}
+                        >
+                          {commentAuthor.displayName || commentAuthor.username}
+                          {commentAuthor.isVerified && <CheckBadgeIcon />}
+                        </Link>
+                      ) : (
+                        <span style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--muted)' }}>
+                          Deleted user
+                        </span>
+                      );
+                    })()}
+                    <span className="dim mono" style={{ fontSize: '11px' }}>
+                      {new Date(c.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p style={{ fontFamily: 'var(--prose)', fontSize: '15.5px', color: 'var(--ink-2)', lineHeight: 1.6 }}>
+                    {c.text}
+                  </p>
                 </div>
-                <p style={{ fontFamily: 'var(--prose)', fontSize: '16px', color: 'var(--ink-2)' }}>{c.text}</p>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </article>
   );
 };
-
