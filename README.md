@@ -1,4 +1,4 @@
-# Off By One — Community Publishing Platform
+# iTweet (Off By One) — Community Publishing Platform
 > An upgraded, community-driven publishing platform for developers. Built on Node.js, Express, TypeScript, MongoDB, React, and Socket.IO.
 
 ---
