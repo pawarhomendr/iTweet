@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:match*",
-      "destination": "https://indiagram-backend.onrender.com/api/:match*"
+      "destination": "https://indiagram-backend-staging.onrender.com/api/:match*"
     },
     {
       "source": "/(.*)",
