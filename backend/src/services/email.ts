@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import { Buffer } from 'buffer';
 
 export interface EmailDeliveryResult {
   accepted: boolean;
@@ -18,27 +18,74 @@ export class EmailDeliveryError extends Error {
 }
 
 function missingEmailConfig(): string[] {
-  return ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'EMAIL_FROM']
+  return ['GMAIL_CLIENT_ID', 'GMAIL_CLIENT_SECRET', 'GMAIL_REFRESH_TOKEN', 'EMAIL_FROM']
     .filter((key) => !process.env[key]?.trim());
 }
 
-function createTransport() {
-  const port = Number(process.env.SMTP_PORT ?? 587);
-  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+async function getAccessToken(): Promise<string> {
+  const clientId = process.env.GMAIL_CLIENT_ID?.trim();
+  const clientSecret = process.env.GMAIL_CLIENT_SECRET?.trim();
+  const refreshToken = process.env.GMAIL_REFRESH_TOKEN?.trim();
 
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port,
-    secure,
-    requireTLS: process.env.SMTP_REQUIRE_TLS === 'true' || (!secure && process.env.NODE_ENV === 'production'),
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    connectionTimeout: 10_000,
-    greetingTimeout: 10_000,
-    socketTimeout: 15_000,
-  });
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new EmailDeliveryError('EMAIL_CONFIG_MISSING', 'Gmail API credentials are incomplete.');
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+
+  try {
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
+      signal: controller.signal,
+    });
+
+    const data = await response.json() as { access_token?: string; error?: string };
+
+    if (!response.ok || !data.access_token) {
+      const errCode = data.error ?? 'OAUTH_REFRESH_FAILED';
+      console.error(`[email] OAuth token refresh failed error=${errCode}`);
+      throw new EmailDeliveryError(errCode, 'Failed to authenticate with Gmail API.');
+    }
+
+    return data.access_token;
+  } catch (error) {
+    if (error instanceof EmailDeliveryError) throw error;
+    const msg = error instanceof Error ? error.message : 'Unknown network failure';
+    console.error(`[email] OAuth request failed message=${msg}`);
+    throw new EmailDeliveryError('OAUTH_NETWORK_ERROR', 'Gmail API authentication request failed.');
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function encodeMimeMessage(from: string, to: string, subject: string, html: string): string {
+  const encodedSubject = `=?UTF-8?B?${Buffer.from(subject, 'utf-8').toString('base64')}?=`;
+  const mime = [
+    `From: ${from}`,
+    `To: ${to}`,
+    `Subject: ${encodedSubject}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    Buffer.from(html, 'utf-8').toString('base64'),
+  ].join('\r\n');
+
+  return Buffer.from(mime, 'utf-8')
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 }
 
 export async function sendEmail(opts: {
@@ -54,33 +101,42 @@ export async function sendEmail(opts: {
     throw new EmailDeliveryError('EMAIL_CONFIG_MISSING', 'Email delivery is not configured.');
   }
 
-  const transport = createTransport();
+  const accessToken = await getAccessToken();
+  const rawMessage = encodeMimeMessage(process.env.EMAIL_FROM!, opts.to, opts.subject, opts.html);
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+
   try {
-    const result = await transport.sendMail({
-      from: process.env.EMAIL_FROM,
-      to: opts.to,
-      subject: opts.subject,
-      html: opts.html,
+    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ raw: rawMessage }),
+      signal: controller.signal,
     });
 
-    const accepted = result.accepted.length > 0;
-    if (!accepted) {
-      console.error('[email] provider did not accept the message.');
-      throw new EmailDeliveryError('EMAIL_NOT_ACCEPTED', 'Email provider did not accept the message.');
+    const data = await response.json() as { id?: string; error?: { code?: number; message?: string; status?: string } };
+
+    if (!response.ok || !data.id) {
+      const status = response.status;
+      const errCode = data.error?.status ?? `GMAIL_API_${status}`;
+      console.error(`[email] Gmail API rejected message status=${status} code=${errCode}`);
+      throw new EmailDeliveryError(errCode, 'Gmail API rejected the message.');
     }
 
-    return { accepted, messageId: result.messageId };
+    return { accepted: true, messageId: data.id };
   } catch (error) {
     if (error instanceof EmailDeliveryError) throw error;
-    const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : 'SMTP_SEND_FAILED';
-    const message = error instanceof Error ? error.message : 'Unknown SMTP failure';
-    console.error(`[email] delivery failed code=${code} message=${message}`);
-    throw new EmailDeliveryError(code, 'Email provider rejected the message.');
+    const msg = error instanceof Error ? error.message : 'Unknown network failure';
+    console.error(`[email] Gmail API request failed message=${msg}`);
+    throw new EmailDeliveryError('GMAIL_SEND_FAILED', 'Gmail API delivery request failed.');
   } finally {
-    transport.close();
+    clearTimeout(timeout);
   }
 }
-
 
 export function passwordResetEmail(link: string): string {
   return `
