@@ -89,7 +89,7 @@ export const SearchPage: React.FC = () => {
             marginBottom: '6px',
           }}
         >
-          Search Indiagram
+          Search iTweet
         </h1>
         <p className="dim" style={{ fontFamily: 'var(--prose)', fontSize: '15px' }}>
           Find people, stories, ideas, and conversations that spark your curiosity.

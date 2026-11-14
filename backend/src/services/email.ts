@@ -141,9 +141,9 @@ export async function sendEmail(opts: {
 export function passwordResetEmail(link: string): string {
   return `
     <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#211A16;background:#FAFAF7;padding:32px;border:1px solid #E4DDD6;border-radius:12px">
-      <p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#B94428">Indiagram</p>
+      <p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#B94428">iTweet</p>
       <h2 style="color:#211A16;font-size:28px;margin:16px 0 10px">Reset your password</h2>
-      <p style="line-height:1.6">Use the button below to choose a new password. This secure link expires in one hour and can only be used once.</p>
+      <p style="line-height:1.6">Use the button below to choose a new password for your iTweet account. This secure link expires in one hour and can only be used once.</p>
       <a href="${link}" style="display:inline-block;padding:13px 22px;background:#B94428;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;margin:18px 0">Choose a new password</a>
       <p style="font-size:12px;line-height:1.5;word-break:break-all;color:#8C7B72">Fallback address:<br>${link}</p>
       <p style="font-size:13px;line-height:1.6;color:#8C7B72">If you did not request this, you can safely ignore it.</p>
@@ -153,9 +153,9 @@ export function passwordResetEmail(link: string): string {
 export function emailVerifyEmail(link: string): string {
   return `
     <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#211A16;background:#FAFAF7;padding:32px;border:1px solid #E4DDD6;border-radius:12px">
-      <p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#B94428">Indiagram</p>
-      <h2 style="color:#211A16;font-size:28px;margin:16px 0 10px">Welcome to Indiagram</h2>
-      <p style="line-height:1.6">Confirm your email address to activate your account and join conversations, communities, and creative spaces across Indiagram.</p>
+      <p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#B94428">iTweet</p>
+      <h2 style="color:#211A16;font-size:28px;margin:16px 0 10px">Welcome to iTweet</h2>
+      <p style="line-height:1.6">Confirm your email address to activate your iTweet account and join conversations, communities, and creative spaces. Your Social World. Your Voice.</p>
       <a href="${link}" style="display:inline-block;padding:13px 22px;background:#B94428;color:#fff;border-radius:8px;text-decoration:none;font-weight:700;margin:18px 0">Verify my email</a>
       <p style="font-size:12px;line-height:1.5;word-break:break-all;color:#8C7B72">Fallback address:<br>${link}</p>
       <p style="font-size:13px;line-height:1.6;color:#8C7B72">This verification link expires in 24 hours. If you did not create this account, you can safely ignore this message.</p>

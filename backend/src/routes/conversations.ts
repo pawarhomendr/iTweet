@@ -130,7 +130,7 @@ router.get('/:conversationId/messages/:messageId/image', authenticate, async (re
     const extension = contentType.split('/')[1]?.replace(/[^a-z0-9]/gi, '') || 'jpg';
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Length', buffer.length);
-    res.setHeader('Content-Disposition', `attachment; filename="indiagram-chat-${req.params.messageId}.${extension}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="itweet-chat-${req.params.messageId}.${extension}"`);
     res.setHeader('Cache-Control', 'private, no-store');
     return res.end(buffer);
   } catch (err) { next(err); }

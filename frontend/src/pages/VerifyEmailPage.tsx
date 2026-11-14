@@ -77,7 +77,7 @@ export const VerifyEmailPage: React.FC = () => {
         {(state === 'pending' || state === 'failed') && (
           <>
             <p className="prose" style={{ fontSize: '16px' }}>
-              We need to confirm that you can access this inbox before activating your Indiagram account. Verification links expire after 24 hours and work only once.
+              We need to confirm that you can access this inbox before activating your iTweet account. Verification links expire after 24 hours and work only once.
             </p>
             {state === 'failed' && (
               <p className="field-error" style={{ marginTop: '14px' }}>This link is invalid or has expired. Request a fresh one below.</p>

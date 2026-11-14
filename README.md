@@ -71,7 +71,7 @@ SMTP_SECURE=false
 SMTP_REQUIRE_TLS=true
 SMTP_USER=your-sending-account@gmail.com
 SMTP_PASS=your-16-character-app-password
-EMAIL_FROM="Indiagram <your-sending-account@gmail.com>"
+EMAIL_FROM="iTweet <your-sending-account@gmail.com>"
 FRONTEND_URL=http://localhost:5173
 ```
 

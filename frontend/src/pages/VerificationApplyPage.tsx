@@ -66,7 +66,7 @@ export const VerificationApplyPage: React.FC = () => {
           Apply for Verified Badge
         </h1>
         <p className="dim" style={{ fontFamily: 'var(--prose)', fontSize: '15px' }}>
-          The Indiagram blue tick recognizes verified contributors who consistently produce high-signal,
+          The iTweet blue tick recognizes verified contributors who consistently produce high-signal,
           original engineering articles. Volume of posts alone never guarantees verification.
         </p>
       </div>

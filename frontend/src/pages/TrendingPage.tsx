@@ -36,7 +36,7 @@ export const TrendingPage: React.FC = () => {
             marginBottom: '8px',
           }}
         >
-          Trending on Indiagram
+          Trending on iTweet
         </h1>
         <p className="dim" style={{ fontFamily: 'var(--prose)', fontSize: '15px' }}>
           Discover the most engaged engineering articles, benchmarks, and community discussions.

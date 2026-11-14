@@ -80,7 +80,7 @@ router.post('/register', authLimiter, [
     });
     const verifyLink = buildFrontendLink('/verify-email', rawVerifyToken);
     try {
-      await sendEmail({ to: email, subject: 'Verify your Indiagram account', html: emailVerifyEmail(verifyLink) });
+      await sendEmail({ to: email, subject: 'Verify your iTweet account', html: emailVerifyEmail(verifyLink) });
     } catch (error) {
       console.error(`[email] verification delivery failed code=${error instanceof Error && 'code' in error ? String(error.code) : 'UNKNOWN'}`);
       return res.status(503).json({ success: false, message: 'Your account was created, but verification email delivery is temporarily unavailable. Please try again.' });
@@ -222,7 +222,7 @@ router.post('/forgot-password', authLimiter, [body('email').isEmail().normalizeE
     await User.findByIdAndUpdate(user._id, { passwordResetToken: hashToken(rawToken), passwordResetExpires: expires });
     const link = buildFrontendLink('/reset-password', rawToken);
     try {
-      await sendEmail({ to: user.email, subject: 'Reset your Indiagram password', html: passwordResetEmail(link) });
+      await sendEmail({ to: user.email, subject: 'Reset your iTweet password', html: passwordResetEmail(link) });
     } catch (error) {
       console.error(`[email] password reset delivery failed code=${error instanceof Error && 'code' in error ? String(error.code) : 'UNKNOWN'}`);
       return res.status(503).json({ success: false, message: 'Password reset email delivery is temporarily unavailable. Please try again later.' });
@@ -243,7 +243,7 @@ router.post('/resend-verification', authLimiter, [body('email').isEmail().normal
     try {
       await sendEmail({
         to: user.email,
-        subject: 'Verify your Indiagram account',
+        subject: 'Verify your iTweet account',
         html: emailVerifyEmail(buildFrontendLink('/verify-email', rawToken)),
       });
     } catch (error) {

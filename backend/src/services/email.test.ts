@@ -12,7 +12,7 @@ describe('Gmail API HTTPS email delivery service', () => {
       GMAIL_CLIENT_ID: 'client-id-test',
       GMAIL_CLIENT_SECRET: 'client-secret-test',
       GMAIL_REFRESH_TOKEN: 'refresh-token-test',
-      EMAIL_FROM: 'Indiagram <noreply@example.test>',
+      EMAIL_FROM: 'iTweet <noreply@example.test>',
     };
     vi.stubGlobal('fetch', mockFetch);
     mockFetch.mockReset();

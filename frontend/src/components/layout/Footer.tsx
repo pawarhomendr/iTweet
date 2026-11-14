@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -35,7 +35,7 @@ export const Footer: React.FC = () => {
               color: 'var(--ink)',
             }}
           >
-            Indi<span style={{ color: 'var(--accent)' }}>agram</span>
+            i<span style={{ color: 'var(--accent)' }}>Tweet</span>
           </span>
           <p
             style={{
@@ -126,7 +126,7 @@ export const Footer: React.FC = () => {
               Project
             </span>
             <a
-              href="https://github.com/pawarhomendr/off-by-one"
+              href="https://github.com/pawarhomendr/iTweet"
               target="_blank"
               rel="noreferrer"
               style={{ color: 'var(--muted)', fontSize: '13.5px' }}
@@ -156,7 +156,7 @@ export const Footer: React.FC = () => {
             color: 'var(--muted)',
           }}
         >
-          © {new Date().getFullYear()} Indiagram · made for curious people
+          © {new Date().getFullYear()} iTweet · Your Social World. Your Voice.
         </p>
         <p
           style={{

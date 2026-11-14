@@ -111,7 +111,7 @@ export const SettingsPage: React.FC = () => {
         >
           <h3 style={{ fontSize: '18px', color: 'var(--error)', marginBottom: '8px' }}>Danger Zone</h3>
           <p className="dim" style={{ fontFamily: 'var(--prose)', fontSize: '14.5px', marginBottom: '16px' }}>
-            Permanently remove your account and associated session data from Indiagram.
+            Permanently remove your account and associated session data from iTweet.
           </p>
 
           {!deleteConfirmOpen ? (

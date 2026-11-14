@@ -43,7 +43,7 @@ export const FeedbackPage: React.FC = () => {
           Send Feedback
         </h1>
         <p className="dim" style={{ fontFamily: 'var(--prose)', fontSize: '15px' }}>
-          Suggestions, bug reports, or feature ideas for Indiagram. Every message is reviewed by the team.
+          Suggestions, bug reports, or feature ideas for iTweet. Every message is reviewed by the team.
         </p>
       </div>
 

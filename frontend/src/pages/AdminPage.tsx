@@ -285,7 +285,7 @@ export const AdminPage: React.FC = () => {
         <div>
           <p className="eyebrow">{'// moderation & administration'}</p>
           <h1>Platform control room</h1>
-          <p className="dim">Review community activity, resolve reports, and keep Indiagram healthy.</p>
+          <p className="dim">Review community activity, resolve reports, and keep iTweet healthy.</p>
         </div>
         <span className="admin-role-badge">{currentUser.role === 'admin' ? 'Administrator' : 'Moderator'}</span>
       </header>

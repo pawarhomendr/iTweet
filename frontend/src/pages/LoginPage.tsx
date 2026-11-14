@@ -92,7 +92,7 @@ export const LoginPage: React.FC = () => {
             fontStyle: 'italic',
           }}
         >
-          Sign in to your Indiagram account to publish and comment.
+          Sign in to your iTweet account to publish and comment.
         </p>
       </div>
 
@@ -164,7 +164,7 @@ export const LoginPage: React.FC = () => {
           <p className="dim mono" style={{ fontSize: '12px' }}>
              Don&apos;t have an account?{' '}
             <Link to="/register" style={{ color: 'var(--accent)', fontWeight: 500 }}>
-              Join Indiagram
+              Join iTweet
             </Link>
           </p>
         </div>

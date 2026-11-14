@@ -59,7 +59,7 @@ export const Header: React.FC = () => {
     <header className="site-head">
       <div className="shell head-inner">
         <Link to="/" className="mark" onClick={closeMenu}>
-          Indi<span style={{ color: 'var(--accent)' }}>agram</span><span className="caret" aria-hidden="true" />
+          i<span style={{ color: 'var(--accent)' }}>Tweet</span><span className="caret" aria-hidden="true" />
         </Link>
 
         {/* Desktop Nav */}

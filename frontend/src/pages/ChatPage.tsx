@@ -273,7 +273,7 @@ export const ChatPage: React.FC = () => {
       anchor.href = objectUrl;
       const disposition = response.headers['content-disposition'] as string | undefined;
       const filename = disposition?.match(/filename="([^"]+)"/)?.[1];
-      anchor.download = filename || `indiagram-chat-${messageId}.jpg`;
+      anchor.download = filename || `itweet-chat-${messageId}.jpg`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();

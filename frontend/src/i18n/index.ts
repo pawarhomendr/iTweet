@@ -46,7 +46,7 @@ export const SUPPORTED_LANGUAGES = [
 const resources: Resource = {
   en: {
     translation: {
-      appName: 'Indiagram',
+      appName: 'iTweet',
       tagline: 'Developer Feed & Professional Editorial',
       nav: {
         home: 'Home',
@@ -66,12 +66,12 @@ const resources: Resource = {
       },
       auth: {
         welcomeBack: 'Welcome back',
-        signInPrompt: 'Sign in to your Indiagram account to publish and comment.',
+        signInPrompt: 'Sign in to your iTweet account to publish and comment.',
         emailLabel: 'Email address',
         passwordLabel: 'Password',
         signInBtn: 'Sign in',
         noAccount: "Don't have an account?",
-        joinNow: 'Join Indiagram',
+        joinNow: 'Join iTweet',
         forgotPassword: 'Forgot password?',
         createAccount: 'Create an account',
         usernameLabel: 'Username',

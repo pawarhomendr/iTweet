@@ -21,13 +21,13 @@ export const TermsPage: React.FC = () => {
         <section>
           <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '12px', color: 'var(--ink)' }}>1. Acceptance of Terms</h2>
           <p style={{ color: 'var(--muted)' }}>
-            By registering, accessing, or using Indiagram, you agree to be bound by these Terms & Conditions. If you do not agree to all of these terms, you are prohibited from using the platform.
+            By registering, accessing, or using iTweet, you agree to be bound by these Terms & Conditions. If you do not agree to all of these terms, you are prohibited from using the platform.
           </p>
         </section>
         <section>
           <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '12px', color: 'var(--ink)' }}>2. Age Requirement & Eligibility</h2>
           <p style={{ color: 'var(--muted)' }}>
-            Indiagram is strictly intended for users who are 18 years of age or older. By registering an account, you explicitly confirm that you meet this age requirement.
+            iTweet is strictly intended for users who are 18 years of age or older. By registering an account, you explicitly confirm that you meet this age requirement.
           </p>
         </section>
         <section>
@@ -39,7 +39,7 @@ export const TermsPage: React.FC = () => {
         <section>
           <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '12px', color: 'var(--ink)' }}>4. Modifications to Service</h2>
           <p style={{ color: 'var(--muted)' }}>
-            We reserve the right to modify or discontinue Indiagram at any time without notice. Continued use of the platform after updates constitutes acceptance of the revised terms.
+            We reserve the right to modify or discontinue iTweet at any time without notice. Continued use of the platform after updates constitutes acceptance of the revised terms.
           </p>
         </section>
       </div>

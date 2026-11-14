@@ -3,7 +3,7 @@ import { Component, ErrorInfo, ReactNode } from 'react';
 /**
  * ErrorBoundary component to catch unexpected React render exceptions and prevent full white-screen crashes.
  * Called by App.tsx around the routing tree. No existing file serves this purpose.
- * Implemented per user approval instruction to provide a friendly fallback UI consistent with Indiagram's editorial design.
+ * Implemented per user approval instruction to provide a friendly fallback UI consistent with iTweet's editorial design.
  */
 interface Props {
   children: ReactNode;

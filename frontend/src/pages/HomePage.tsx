@@ -41,7 +41,7 @@ export const HomePage: React.FC = () => {
             <em>find your people.</em>
           </h1>
           <p className="deck">
-            Indiagram is a warm, open community for stories, ideas, discoveries, and everyday moments. Read widely, meet curious people, and make something worth sharing.
+            iTweet is a warm, open community for stories, ideas, discoveries, and everyday moments. Read widely, meet curious people, and make something worth sharing. Your Social World. Your Voice.
           </p>
           <div className="hero-acts">
             <a className="btn btn-accent" href="#writing">Explore the feed</a>
@@ -186,7 +186,7 @@ export const HomePage: React.FC = () => {
             <p className="eyebrow">{'// the platform'}</p>
             <h2>Bring your perspective.</h2>
             <p className="prose">
-              Indiagram is a community publishing space for anyone with something to say, show, teach, question, or celebrate. Find thoughtful posts across interests and make room for voices unlike your own.
+              iTweet is a community publishing space for anyone with something to say, show, teach, question, or celebrate. Find thoughtful posts across interests and make room for voices unlike your own.
             </p>
             <p className="prose" style={{ marginTop: '16px' }}>
               Share a recipe, a lesson, a sketch, a travel note, a business idea, or a thoughtful question. Good conversation is the common ground.
