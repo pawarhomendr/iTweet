@@ -401,21 +401,123 @@ SUPPORTED_LANGUAGES.forEach((lang) => {
   }
 });
 
+const FULLY_SUPPORTED_LOCALES = ['en', 'hi', 'mr', 'bn', 'ar', 'ur'] as const;
+type FullySupportedLocale = typeof FULLY_SUPPORTED_LOCALES[number];
+const RTL_LOCALES = new Set<FullySupportedLocale>(['ar', 'ur']);
+
+function isFullySupportedLocale(code: string | null | undefined): code is FullySupportedLocale {
+  return typeof code === 'string' && (FULLY_SUPPORTED_LOCALES as readonly string[]).includes(code);
+}
+
+function normalizeLocaleCandidate(code: string | null | undefined): string | null {
+  if (!code || typeof code !== 'string') return null;
+  const trimmed = code.trim();
+  if (!trimmed) return null;
+  return trimmed.replace('_', '-');
+}
+
+function resolveFullySupportedLocale(code: string | null | undefined): FullySupportedLocale | null {
+  const normalized = normalizeLocaleCandidate(code);
+  if (!normalized) return null;
+  if (isFullySupportedLocale(normalized)) return normalized;
+  const base = normalized.split('-')[0];
+  if (isFullySupportedLocale(base)) return base;
+  return null;
+}
+
+function safeGetStoredLanguage(): string | null {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage.getItem('obo-language');
+  } catch {
+    return null;
+  }
+}
+
+function safeSetStoredLanguage(code: string): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem('obo-language', code);
+  } catch {
+    // ignore storage failures (private mode/quota); runtime language still applies
+  }
+}
+
+function getDirectionForLocale(code: string | null | undefined): 'ltr' | 'rtl' {
+  const resolved = resolveFullySupportedLocale(code);
+  if (resolved && RTL_LOCALES.has(resolved)) return 'rtl';
+  return 'ltr';
+}
+
+function applyDocumentMetadata(code: string | null | undefined): string {
+  const fully = resolveFullySupportedLocale(code);
+  const normalized = normalizeLocaleCandidate(code);
+  const resolved = fully ?? normalized ?? 'en';
+  if (typeof document !== 'undefined' && document.documentElement) {
+    document.documentElement.lang = resolved;
+    // Explicit mapping for the six fully supported locales (ar, ur => rtl; en, hi, mr, bn => ltr).
+    // Other configured locales default to ltr.
+    document.documentElement.dir = fully ? getDirectionForLocale(fully) : (resolved === 'ar' || resolved === 'ur' ? 'rtl' : 'ltr');
+  }
+  return resolved;
+}
+
+function getInitialLanguage(): FullySupportedLocale {
+  const stored = resolveFullySupportedLocale(safeGetStoredLanguage());
+  if (stored) return stored;
+  return 'en';
+}
+
+const initialLanguage = getInitialLanguage();
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
+    lng: initialLanguage,
     fallbackLng: 'en',
     debug: false,
     interpolation: {
       escapeValue: false,
     },
     detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
+      // Prefer persisted selection; avoid early navigator-driven override of valid saved locale.
+      // Persistence is handled explicitly/safely by this module to tolerate storage failures.
+      order: ['localStorage'],
+      caches: [],
       lookupLocalStorage: 'obo-language',
     },
   });
+
+applyDocumentMetadata(initialLanguage);
+safeSetStoredLanguage(initialLanguage);
+
+i18n.on('languageChanged', (lng) => {
+  const storedFully = resolveFullySupportedLocale(safeGetStoredLanguage());
+  const requestedFully = resolveFullySupportedLocale(lng);
+  const requestedNormalized = normalizeLocaleCandidate(lng);
+
+  // Persist/restore the six fully supported locales reliably; handle invalid values safely.
+  // Preserve existing configured-locale selection behavior when possible.
+  let resolved: string;
+  if (requestedFully) {
+    resolved = requestedFully;
+  } else if (requestedNormalized && SUPPORTED_LANGUAGES.some((l) => l.code === requestedNormalized)) {
+    resolved = requestedNormalized;
+  } else if (storedFully) {
+    resolved = storedFully;
+  } else {
+    resolved = 'en';
+  }
+
+  applyDocumentMetadata(resolved);
+  safeSetStoredLanguage(resolved);
+
+  // Prevent an early/invalid fallback from overwriting a valid saved locale during startup.
+  if ((i18n.resolvedLanguage || i18n.language) !== resolved) {
+    void i18n.changeLanguage(resolved);
+  }
+});
 
 export default i18n;
