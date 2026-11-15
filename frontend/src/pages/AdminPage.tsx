@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/auth';
 import toast from 'react-hot-toast';
 import { PageBackButton } from '@/components/layout/PageBackButton';
 
-type AdminTab = 'pending' | 'reports' | 'verification' | 'stats';
+type AdminTab = 'pending' | 'reports' | 'verification' | 'feedback' | 'stats';
 type ReviewStatus = 'published' | 'rejected';
 type VerificationStatus = 'approved' | 'rejected';
 type ReportStatus = 'resolved' | 'dismissed';
@@ -18,6 +18,23 @@ interface AdminStats {
   pendingPosts: number;
   openReports: number;
   feedbackUnread: number;
+}
+
+interface FeedbackEntry {
+  _id: string;
+  email?: string;
+  subject?: string;
+  body?: string;
+  isRead: boolean;
+  createdAt?: string;
+  user?: { username?: string; displayName?: string } | string | null;
+}
+
+interface FeedbackResponse {
+  entries: FeedbackEntry[];
+  total: number;
+  page: number;
+  pages: number;
 }
 
 interface AdminErrorResponse {
@@ -33,6 +50,7 @@ const TABS: Array<{ id: AdminTab; label: string; description: string }> = [
   { id: 'pending', label: 'Pending posts', description: 'Review submissions awaiting publication.' },
   { id: 'reports', label: 'Open reports', description: 'Resolve reports raised by the community.' },
   { id: 'verification', label: 'Verification', description: 'Review creator verification applications.' },
+  { id: 'feedback', label: 'Feedback', description: 'Read and manage feedback submitted by users.' },
   { id: 'stats', label: 'Overview', description: 'Monitor the current platform snapshot.' },
 ];
 
@@ -161,6 +179,8 @@ export const AdminPage: React.FC = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const isMod = useAuthStore((state) => state.isMod);
   const [tab, setTab] = useState<AdminTab>('pending');
+  const [feedbackPage, setFeedbackPage] = useState(1);
+  const [expandedFeedbackId, setExpandedFeedbackId] = useState<string | null>(null);
 
   const isAuthorized = Boolean(currentUser && isAuthenticated() && isMod());
 
@@ -204,6 +224,16 @@ export const AdminPage: React.FC = () => {
     },
   });
 
+  const feedbackQuery = useQuery<FeedbackResponse>({
+    queryKey: ['admin-feedback', feedbackPage],
+    enabled: isAuthorized && tab === 'feedback',
+    retry: false,
+    queryFn: async () => {
+      const res = await api.get<{ data: FeedbackResponse }>(`/admin/feedback?page=${feedbackPage}`);
+      return res.data.data;
+    },
+  });
+
   const reviewPostMutation = useMutation({
     mutationFn: async ({ id, status, reason }: { id: string; status: ReviewStatus; reason?: string }) => {
       return api.patch(`/admin/posts/${id}/review`, { status, rejectionReason: reason });
@@ -237,6 +267,18 @@ export const AdminPage: React.FC = () => {
       void queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
     },
     onError: (error) => toast.error(getErrorMessage(error) || 'Unable to review this report'),
+  });
+
+  const markFeedbackReadMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return api.patch(`/admin/feedback/${id}/read`);
+    },
+    onSuccess: () => {
+      toast.success('Feedback marked as read');
+      void queryClient.invalidateQueries({ queryKey: ['admin-feedback'] });
+      void queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+    },
+    onError: (error) => toast.error(getErrorMessage(error) || 'Unable to mark feedback as read'),
   });
 
   if (!currentUser) {
@@ -311,6 +353,7 @@ export const AdminPage: React.FC = () => {
                 </span>
                 {item.id === 'pending' && <b>{stats?.pendingPosts ?? '—'}</b>}
                 {item.id === 'reports' && <b>{stats?.openReports ?? '—'}</b>}
+                {item.id === 'feedback' && <b>{stats?.feedbackUnread ?? '—'}</b>}
               </button>
             ))}
           </nav>
@@ -440,6 +483,72 @@ export const AdminPage: React.FC = () => {
                       </div>
                     </article>
                   ))}
+                </div>
+              )
+            )}
+
+            {tab === 'feedback' && (
+              feedbackQuery.isLoading ? <AdminLoadingState /> : feedbackQuery.isError ? (
+                shouldShowSectionError(feedbackQuery.error) ? <AdminQueryError resource="feedback" error={feedbackQuery.error} onRetry={() => { void feedbackQuery.refetch(); }} /> : null
+              ) : (feedbackQuery.data?.entries?.length ?? 0) === 0 ? (
+                <AdminEmptyState title="No feedback yet" message="No user feedback has been submitted." />
+              ) : (
+                <div className="admin-record-list">
+                  {feedbackQuery.data?.entries.map((entry) => {
+                    const isExpanded = expandedFeedbackId === entry._id;
+                    return (
+                      <article className="admin-record card" key={entry._id}>
+                        <div className="admin-record-topline">
+                          <div>
+                            <span className="badge">Feedback</span>
+                            <span className={entry.isRead ? 'admin-status admin-status-open' : 'admin-status admin-status-pending'}>
+                              {entry.isRead ? 'Read' : 'Unread'}
+                            </span>
+                          </div>
+                          <span className="mono dim">{formatDate(entry.createdAt)}</span>
+                        </div>
+                        <h3>{entry.subject || 'No subject'}</h3>
+                        <p className="mono dim">{entry.email || 'No email provided'}</p>
+                        <p className="admin-record-copy">
+                          {isExpanded ? (entry.body || '') : `${(entry.body || '').slice(0, 240)}${(entry.body || '').length > 240 ? '…' : ''}`}
+                        </p>
+                        <div className="admin-record-actions">
+                          <button type="button" className="btn btn-sm btn-ghost" onClick={() => setExpandedFeedbackId(isExpanded ? null : entry._id)}>
+                            {isExpanded ? 'Hide details' : 'View details'}
+                          </button>
+                          {!entry.isRead && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-accent"
+                              onClick={() => markFeedbackReadMutation.mutate(entry._id)}
+                              disabled={markFeedbackReadMutation.isPending}
+                            >
+                              Mark as read
+                            </button>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                  <div className="admin-record-actions" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => setFeedbackPage((p) => Math.max(1, p - 1))}
+                      disabled={(feedbackQuery.data?.page ?? 1) <= 1 || feedbackQuery.isFetching}
+                    >
+                      Previous
+                    </button>
+                    <span className="mono dim">Page {feedbackQuery.data?.page ?? feedbackPage} of {feedbackQuery.data?.pages ?? 1}</span>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-ghost"
+                      onClick={() => setFeedbackPage((p) => p + 1)}
+                      disabled={(feedbackQuery.data?.page ?? 1) >= (feedbackQuery.data?.pages ?? 1) || feedbackQuery.isFetching}
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               )
             )}

@@ -13,6 +13,22 @@ interface SocketState {
   isUserOnline: (userId: string) => boolean;
 }
 
+export function resolveSocketUrl(env: { VITE_SOCKET_URL?: string; VITE_API_URL?: string } = import.meta.env): string {
+  const socketUrl = env.VITE_SOCKET_URL?.trim();
+  if (socketUrl) return socketUrl;
+
+  const apiUrl = env.VITE_API_URL?.trim();
+  if (apiUrl) {
+    try {
+      return new URL(apiUrl).origin;
+    } catch {
+      // Non-absolute or invalid API URL (e.g. '/api') should keep local proxy fallback.
+    }
+  }
+
+  return '/';
+}
+
 export const useSocketStore = create<SocketState>((set, get) => ({
   socket: null,
   unreadCount: 0,
@@ -22,7 +38,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     const token = useAuthStore.getState().getToken();
     if (!token) return;
 
-    const socket = io('/', { auth: { token }, transports: ['websocket', 'polling'] });
+    const socket = io(resolveSocketUrl(), { auth: { token }, transports: ['websocket', 'polling'] });
 
     socket.on('notification:new', () => set((s) => ({ unreadCount: s.unreadCount + 1 })));
 
