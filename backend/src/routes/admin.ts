@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
+import mongoose from 'mongoose';
 import { User } from '../models/User';
 import { Post } from '../models/Post';
 import { Notification } from '../models/Notification';
@@ -136,6 +137,23 @@ router.get('/feedback', authenticate, requireMod, async (req: any, res: any, nex
       Feedback.countDocuments(),
     ]);
     res.json({ success: true, data: { entries, total, page, pages: Math.ceil(total / limit) } });
+  } catch (err) { next(err); }
+});
+
+// PATCH /api/admin/feedback/:id/read
+router.patch('/feedback/:id/read', authenticate, requireMod, async (req: any, res: any, next: any) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid feedback ID' });
+    }
+
+    const entry = await Feedback.findByIdAndUpdate(id, { isRead: true }, { new: true });
+    if (!entry) {
+      return res.status(404).json({ success: false, message: 'Feedback not found' });
+    }
+
+    res.json({ success: true, data: { entry } });
   } catch (err) { next(err); }
 });
 

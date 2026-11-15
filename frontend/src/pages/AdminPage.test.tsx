@@ -52,16 +52,30 @@ const pendingPost = {
   body: 'A pending body.',
 } as unknown as Post;
 
+const feedbackEntry = {
+  _id: 'fb-1',
+  email: 'reader@example.com',
+  subject: 'Helpful suggestion',
+  body: 'This is the full feedback message body that should be readable by moderators.',
+  isRead: false,
+  createdAt: '2026-01-02T10:30:00.000Z',
+};
+
 function httpError(status: number): Error & { response: { status: number } } {
   return Object.assign(new Error(`HTTP ${status}`), { response: { status } });
 }
 
-function setupSuccess(posts: Post[] = []) {
+function setupSuccess(posts: Post[] = [], feedback: any[] = [feedbackEntry], feedbackPages = 1) {
   apiGet.mockImplementation((url: string) => {
     if (url === '/admin/stats') return Promise.resolve({ data: { data: stats } });
     if (url === '/admin/posts/pending') return Promise.resolve({ data: { data: { posts } } });
     if (url === '/reports?status=open') return Promise.resolve({ data: { data: { reports: [] } } });
     if (url === '/verification') return Promise.resolve({ data: { data: { requests: [] } } });
+    if (typeof url === 'string' && url.startsWith('/admin/feedback')) {
+      const pageMatch = url.match(/page=(\d+)/);
+      const page = pageMatch ? Number(pageMatch[1]) : 1;
+      return Promise.resolve({ data: { data: { entries: feedback, total: feedback.length, page, pages: feedbackPages } } });
+    }
     return Promise.reject(new Error(`Unexpected URL: ${url}`));
   });
 }
@@ -187,5 +201,56 @@ describe('AdminPage reliability and moderation UX', () => {
       rejectionReason: undefined,
     }));
     expect(toastSuccess).toHaveBeenCalledWith('Post reviewed successfully');
+  });
+
+  it('renders feedback entries with subject, content preview, email, date and status', async () => {
+    setupSuccess([], [feedbackEntry], 2);
+    renderAdmin();
+
+    fireEvent.click(screen.getByRole('button', { name: /Feedback/i }));
+    expect(await screen.findByText('Helpful suggestion')).toBeTruthy();
+    expect(screen.getByText('reader@example.com')).toBeTruthy();
+    expect(screen.getByText(/full feedback message body/i)).toBeTruthy();
+    expect(screen.getByText('Unread')).toBeTruthy();
+    expect(screen.getByText(/Page 1 of 2/)).toBeTruthy();
+  });
+
+  it('opens feedback detail view and marks entry as read while refreshing queries', async () => {
+    setupSuccess([], [feedbackEntry], 1);
+    apiPatch.mockResolvedValue({ data: { success: true, data: { entry: { ...feedbackEntry, isRead: true } } } });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(client, 'invalidateQueries');
+    renderAdmin(client);
+
+    fireEvent.click(screen.getByRole('button', { name: /Feedback/i }));
+    fireEvent.click(await screen.findByRole('button', { name: 'View details' }));
+    expect(screen.getByText('This is the full feedback message body that should be readable by moderators.')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Mark as read' }));
+
+    await waitFor(() => expect(apiPatch).toHaveBeenCalledWith('/admin/feedback/fb-1/read'));
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('Feedback marked as read'));
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin-feedback'] }));
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin-stats'] }));
+  });
+
+  it('shows feedback empty state', async () => {
+    setupSuccess([], [], 1);
+    renderAdmin();
+    fireEvent.click(screen.getByRole('button', { name: /Feedback/i }));
+    expect(await screen.findByText('No feedback yet')).toBeTruthy();
+  });
+
+  it('shows feedback loading and error states', async () => {
+    apiGet.mockImplementation((url: string) => {
+      if (url === '/admin/stats') return Promise.resolve({ data: { data: stats } });
+      if (url === '/admin/posts/pending') return Promise.resolve({ data: { data: { posts: [] } } });
+      if (url === '/reports?status=open') return Promise.resolve({ data: { data: { reports: [] } } });
+      if (url === '/verification') return Promise.resolve({ data: { data: { requests: [] } } });
+      if (url.startsWith('/admin/feedback')) return Promise.reject(httpError(500));
+      return Promise.reject(new Error(`Unexpected URL: ${url}`));
+    });
+    renderAdmin();
+    fireEvent.click(screen.getByRole('button', { name: /Feedback/i }));
+    expect(await screen.findByText('Unable to load feedback.')).toBeTruthy();
   });
 });
