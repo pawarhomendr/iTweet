@@ -13,7 +13,12 @@ interface SocketState {
   isUserOnline: (userId: string) => boolean;
 }
 
-export function resolveSocketUrl(env: { VITE_SOCKET_URL?: string; VITE_API_URL?: string } = import.meta.env): string {
+export function resolveSocketUrl(
+  env: { VITE_SOCKET_URL?: string; VITE_API_URL?: string } = {
+    VITE_SOCKET_URL: import.meta.env.VITE_SOCKET_URL,
+    VITE_API_URL: import.meta.env.VITE_API_URL,
+  },
+): string {
   const socketUrl = env.VITE_SOCKET_URL?.trim();
   if (socketUrl) return socketUrl;
 
